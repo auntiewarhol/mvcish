@@ -1,6 +1,8 @@
 {
     "name": "auntiewarhol/mvcish",
     "description": "Lightweight MVC-style PHP web application framework",
+	"homepage": "https://github.com/auntiewarhol/mvcish",
+	"license": "MIT",
     "autoload": {
         "psr-4": {
             "AuntieWarhol\\MVCish\\": "src/"
