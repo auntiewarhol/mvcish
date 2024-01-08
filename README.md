@@ -47,7 +47,7 @@
   </ol>
 </details>
 -->
-
+<br>
 
 <!-- ABOUT THE PROJECT -->
 ## About The Project
@@ -59,6 +59,8 @@ It exists because I inherited a large old legacy system that I needed to migrate
 So this has some capacities to run in multiple different ways at once.
 
 None of this is really documented, because I wrote it for my own use.
+
+It does not have any nifty installer scripts or anything like that. Yet.
 
 And I don't really encourage anyone else to use it. But hey, it's a free world. If you like it, go for it. 
 
