@@ -8,11 +8,11 @@
 [![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]
+<br />
 -->
 
 
 <!-- PROJECT LOGO -->
-<br />
 <div align="center">
   <a href="https://github.com/auntiewarhol/mvcish">
   </a>
@@ -23,9 +23,8 @@
   </p>
 </div>
 
-
-
 <!-- TABLE OF CONTENTS -->
+<!--
 <details>
   <summary>Table of Contents</summary>
   <ol>
@@ -47,13 +46,23 @@
     <li><a href="#acknowledgments">Acknowledgments</a></li>
   </ol>
 </details>
-
+-->
 
 
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
+This is a super-lightweight (and thus probably feature-poor) MVC framework in the same vein as something like Yii. 
 
+It exists because I inherited a large old legacy system that I needed to migrate, update, and replace. I wanted something I could easily hack into place, converting the legacy pages to new mvc-controlled pages in place, as needed, over time. 
+
+So this has some capacities to run in multiple different ways at once.
+
+None of this is really documented, because I wrote it for my own use.
+
+And I don't really encourage anyone else to use it. But hey, it's a free world. If you like it, go for it. 
+
+I'll try to work on the docs.
 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -61,12 +70,13 @@
 
 
 <!-- GETTING STARTED -->
+<!--
 ## Getting Started
 
 
 ### Prerequisites
 
-
+-->
 ### Installation
 
 ```
@@ -78,14 +88,16 @@
 
 
 <!-- USAGE EXAMPLES -->
+<!--
 ## Usage
 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
-
+-->
 <!-- ROADMAP -->
+<!--
 ## Roadmap
 
 
@@ -94,7 +106,7 @@ See the [open issues](https://github.com/auntiewarhol/mvcish/issues) for a full 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
-
+-->
 <!-- CONTRIBUTING -->
 ## Contributing
 
@@ -134,11 +146,12 @@ Project Link: [https://github.com/auntiewarhol/mvcish](https://github.com/auntie
 
 
 <!-- ACKNOWLEDGMENTS -->
+<!--
 ## Acknowledgments
 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
+-->
 
 
 <!-- MARKDOWN LINKS & IMAGES -->
