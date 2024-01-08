@@ -1,0 +1,21 @@
+{
+    "name": "auntiewarhol/mvcish",
+    "description": "Lightweight MVC-style PHP web application framework",
+    "autoload": {
+        "psr-4": {
+            "AuntieWarhol\\MVCish\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "JJ Wright",
+            "email": "jj@plumflowersoftware.com"
+        }
+    ],
+    "require": {
+        "monolog/monolog": "^1.23",
+        "phpmailer/phpmailer": "^6.0",
+        "jeremykendall/php-domain-parser": "^6.0",
+        "symfony/polyfill-intl-idn": "^1.28"
+	}
+}
