@@ -17,7 +17,7 @@
   <a href="https://github.com/auntiewarhol/mvcish">
   </a>
 
-<h3 align="center">MVCish</h3>
+<h1 align="center">MVCish</h1>
   <p align="center">
 	Lightweight MVC-style PHP web application framework
   </p>
@@ -69,8 +69,9 @@
 
 ### Installation
 
-   ```composer require auntiewarhol/mvcish
-   ```
+```
+	composer require auntiewarhol/mvcish
+```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
