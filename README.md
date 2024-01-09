@@ -95,101 +95,109 @@ I'll try to work on the docs.
 (here's a few things slurped in from comments. it's a start)
 
 
+for typical single-point-of-entrance use, your app bootstrap script will be something like:
+
 websiteroot/MyApp/myApp.php
+
 ```
-	<?php
-		use \AuntieWarhol\MVCish\MVCish;
+<?php
+	use \AuntieWarhol\MVCish\MVCish;
 
 
-		# outside scope of MVCish but we recommend using this with csrf-magic
-		# which can be used with beforeRender as shown below, so here's 
-		# some setup for that, otherwise unrelated to MVCish
+	# outside scope of MVCish but we recommend using this with csrf-magic
+	# which can be used with beforeRender as shown below, so here's 
+	# some setup for that, otherwise unrelated to MVCish
 
-		if (php_sapi_name() != "cli") {
+	if (php_sapi_name() != "cli") {
 
-			// instruct PHP to use secure cookie if possible
-			$secure = ((!empty($_SERVER['HTTPS'])) && $_SERVER['HTTPS'] !== 'off') ||
-					(isset($_SERVER['SERVER_PORT']) && ($_SERVER['SERVER_PORT'] == 443)) ||
-					(isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https')
-				? true : false;
+		// instruct PHP to use secure cookie if possible
+		$secure = ((!empty($_SERVER['HTTPS'])) && $_SERVER['HTTPS'] !== 'off') ||
+				(isset($_SERVER['SERVER_PORT']) && ($_SERVER['SERVER_PORT'] == 443)) ||
+				(isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https')
+			? true : false;
 
-			session_set_cookie_params(
-				ini_get('session.cookie_lifetime'),
-				ini_get('session.cookie_path'),
-				ini_get('session.cookie_domain'),
-				$secure,
-				true
-			);
+		session_set_cookie_params(
+			ini_get('session.cookie_lifetime'),
+			ini_get('session.cookie_path'),
+			ini_get('session.cookie_domain'),
+			$secure,
+			true
+		);
 
-			// only do this after setting cookie params
-			# configure csrf magic as needed
-			//function csrf_startup() {
-			//}
-			require_once(__DIR__.'/../lib/csrf-magic-1.0.4/csrf-magic.php');
-		}
+		// only do this after setting cookie params
+		# configure csrf magic as needed
+		//function csrf_startup() {
+		//}
+		require_once(__DIR__.'/../lib/csrf-magic-1.0.4/csrf-magic.php');
+	}
 
-		$MVCish = new \AuntieWarhol\MVCish\MVCish([
-			'environment'  => ENV,
-			'appDirectory' => __DIR__,
-			'MODEL' => [
-				'NAMESPACE' => '\Models\\',
-				'INIT'      => function($MVCish) {
-					require_once __DIR__.'/Propel/generated-conf/config.php';
-					if (!empty($serviceContainer)) {
-						$serviceContainer->setLogger('defaultLogger', $MVCish->log('Propel'));
-						$serviceContainer->setLogger('myApp', $MVCish->log());
-					}
-					// get the dummy connection config propel created,
-					// replace with the values from our config
-					$db = $MVCish->Config('DATABASE');
-					$host = (!empty($_SERVER['BF_USE_HOST_IP']) && isset($db['HOST_IP'])) ?
-						$db['HOST_IP'] : $db['HOST'];
-					$connection = \Propel\Runtime\Propel::getConnectionManager('myApp');
-					// @phpstan-ignore-next-line
-					$config = $connection->getConfiguration();
-					// @phpstan-ignore-next-line
-					$connection->setConfiguration(array_replace($config,[
-						'dsn'      => 'mysql:host='.$host.';dbname='.$db['NAME'],
-						'user'     => $db['USER'],
-						'password' => $db['PASS']
-					]));
-				},
-			],
+	$MVCish = new \AuntieWarhol\MVCish\MVCish([
+		'environment'  => ENV,
+		'appDirectory' => __DIR__,
+		'MODEL' => [
+			'NAMESPACE' => '\Models\\',
+			'INIT'      => function($MVCish) {
+				require_once __DIR__.'/Propel/generated-conf/config.php';
+				if (!empty($serviceContainer)) {
+					$serviceContainer->setLogger('defaultLogger', $MVCish->log('Propel'));
+					$serviceContainer->setLogger('myApp', $MVCish->log());
+				}
+				// get the dummy connection config propel created,
+				// replace with the values from our config
+				$db = $MVCish->Config('DATABASE');
+				$host = (!empty($_SERVER['BF_USE_HOST_IP']) && isset($db['HOST_IP'])) ?
+					$db['HOST_IP'] : $db['HOST'];
+				$connection = \Propel\Runtime\Propel::getConnectionManager('myApp');
+				// @phpstan-ignore-next-line
+				$config = $connection->getConfiguration();
+				// @phpstan-ignore-next-line
+				$connection->setConfiguration(array_replace($config,[
+					'dsn'      => 'mysql:host='.$host.';dbname='.$db['NAME'],
+					'user'     => $db['USER'],
+					'password' => $db['PASS']
+				]));
+			},
+		],
 
-			'beforeRender' => function($MVCish) {
+		'beforeRender' => function($MVCish) {
 
-				if (function_exists('csrf_conf')) {
-					if ($MVCish->View()->view() == 'html') {
+			if (function_exists('csrf_conf')) {
+				if ($MVCish->View()->view() == 'html') {
 
-						if (($name  = $GLOBALS['csrf']['input-name']) &&
-							($token = \BF\CSRFMagic::getTokens())
-						) {
-							// stash csrf vars where Render can find them. Render will add them 
-							// to body_attr, where our js can pick them up to add to ajax calls.
-							$MVCish->options['CSRF'] = [
-								'data-sectkn-name'  => $name,
-								'data-sectkn-token' => $token
-							];
-						}
-					}
-					else {
-						//turn off csfr writing
-						csrf_conf('rewrite',false);
+					if (($name  = $GLOBALS['csrf']['input-name']) &&
+						($token = \BF\CSRFMagic::getTokens())
+					) {
+						// stash csrf vars where Render can find them. Render will add them 
+						// to body_attr, where our js can pick them up to add to ajax calls.
+						$MVCish->options['CSRF'] = [
+							'data-sectkn-name'  => $name,
+							'data-sectkn-token' => $token
+						];
 					}
 				}
-				return true;
+				else {
+					//turn off csfr writing
+					csrf_conf('rewrite',false);
+				}
 			}
-		]);
-
-		// provide our Auth object to MVCish
-		$MVCish->Auth(new \MyApp\Auth($MVCish));
-
-		// If not included by another file, run now
-		if(get_included_files()[0] == __FILE__) {
-			$MVCish->Run();
+			return true;
 		}
-	?>
+	]);
+
+	// provide our Auth object to MVCish
+	$MVCish->Auth(new \MyApp\Auth($MVCish));
+
+	// If not included by another file, run now
+	if(get_included_files()[0] == __FILE__) {
+		$MVCish->Run();
+	}
+?>
 ```
+
+Legacy file-in-place use would work similarly. Go into the legacy file, construct an $MVCish object as above, 
+but instead of Run(), call runController() as described below. Whatever logic the legacy file was doing would 
+then be moved to being done inside the closer being passed to runController.
+
 
 // CONTROLLER ********************
 
@@ -200,26 +208,26 @@ websiteroot/MyApp/myApp.php
 	usual, and that file calls runController, passing the 'controller' as a closure:
 
 ```
-	$MVCish->runController(function() {
-		#do controller stuff
+$MVCish->runController(function() {
+	#do controller stuff
 
-		$response = //
-			// Response should typically be an array, with a 'success' key, eg:
-			// 	$response = ['success' => true];
+	$response = //
+		// Response should typically be an array, with a 'success' key, eg:
+		// 	$response = ['success' => true];
 
-			// along with any other keys appropriate for the situation. However it
-			// could also be a bool, in which case we'll convert it
-			//	$response = true;
+		// along with any other keys appropriate for the situation. However it
+		// could also be a bool, in which case we'll convert it
+		//	$response = true;
 
-			// otherwise we'll take any evaluates-true response you send.
-			// for example other than the typical array, you might send an object
-			// that can serialize itself for the json view.
-			//	$response = $myJSONobject;
+		// otherwise we'll take any evaluates-true response you send.
+		// for example other than the typical array, you might send an object
+		// that can serialize itself for the json view.
+		//	$response = $myJSONobject;
 
-			// if the View doesn't know how to handle your $response, that's on you.
+		// if the View doesn't know how to handle your $response, that's on you.
 
-		return $response;
-	});
+	return $response;
+});
 
 ```
 
@@ -248,19 +256,19 @@ websiteroot/MyApp/myApp.php
 
 	MyApp/lib/Auth.php
 ```
-	<?php
-	namespace BF;
+<?php
+namespace BF;
 
-		class Auth {
-			public function Authorize($authorizeRoles) {
-				#do whatever
-				#if bad
-				return false; #or throw exception
-				#if ok
-				return true;
-			}
+	class Auth {
+		public function Authorize($authorizeRoles) {
+			#do whatever
+			#if bad
+			return false; #or throw exception
+			#if ok
+			return true;
 		}
-	}?>
+	}
+}?>
 ```	
 
 
