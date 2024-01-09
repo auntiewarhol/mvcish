@@ -90,14 +90,184 @@ I'll try to work on the docs.
 
 
 <!-- USAGE EXAMPLES -->
-<!--
 ## Usage
+
+(here's a few things slurped in from comments. it's a start)
+
+
+websiteroot/MyApp/myApp.php
+```
+	<?php
+		use \AuntieWarhol\MVCish\MVCish;
+
+
+		# outside scope of MVCish but we recommend using this with csrf-magic
+		# which can be used with beforeRender as shown below, so here's 
+		# some setup for that, otherwise unrelated to MVCish
+
+		if (php_sapi_name() != "cli") {
+
+			// instruct PHP to use secure cookie if possible
+			$secure = ((!empty($_SERVER['HTTPS'])) && $_SERVER['HTTPS'] !== 'off') ||
+					(isset($_SERVER['SERVER_PORT']) && ($_SERVER['SERVER_PORT'] == 443)) ||
+					(isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https')
+				? true : false;
+
+			session_set_cookie_params(
+				ini_get('session.cookie_lifetime'),
+				ini_get('session.cookie_path'),
+				ini_get('session.cookie_domain'),
+				$secure,
+				true
+			);
+
+			// only do this after setting cookie params
+			# configure csrf magic as needed
+			//function csrf_startup() {
+			//}
+			require_once(__DIR__.'/../lib/csrf-magic-1.0.4/csrf-magic.php');
+		}
+
+		$MVCish = new \AuntieWarhol\MVCish\MVCish([
+			'environment'  => ENV,
+			'appDirectory' => __DIR__,
+			'MODEL' => [
+				'NAMESPACE' => '\Models\\',
+				'INIT'      => function($MVCish) {
+					require_once __DIR__.'/Propel/generated-conf/config.php';
+					if (!empty($serviceContainer)) {
+						$serviceContainer->setLogger('defaultLogger', $MVCish->log('Propel'));
+						$serviceContainer->setLogger('myApp', $MVCish->log());
+					}
+					// get the dummy connection config propel created,
+					// replace with the values from our config
+					$db = $MVCish->Config('DATABASE');
+					$host = (!empty($_SERVER['BF_USE_HOST_IP']) && isset($db['HOST_IP'])) ?
+						$db['HOST_IP'] : $db['HOST'];
+					$connection = \Propel\Runtime\Propel::getConnectionManager('myApp');
+					// @phpstan-ignore-next-line
+					$config = $connection->getConfiguration();
+					// @phpstan-ignore-next-line
+					$connection->setConfiguration(array_replace($config,[
+						'dsn'      => 'mysql:host='.$host.';dbname='.$db['NAME'],
+						'user'     => $db['USER'],
+						'password' => $db['PASS']
+					]));
+				},
+			],
+
+			'beforeRender' => function($MVCish) {
+
+				if (function_exists('csrf_conf')) {
+					if ($MVCish->View()->view() == 'html') {
+
+						if (($name  = $GLOBALS['csrf']['input-name']) &&
+							($token = \BF\CSRFMagic::getTokens())
+						) {
+							// stash csrf vars where Render can find them. Render will add them 
+							// to body_attr, where our js can pick them up to add to ajax calls.
+							$MVCish->options['CSRF'] = [
+								'data-sectkn-name'  => $name,
+								'data-sectkn-token' => $token
+							];
+						}
+					}
+					else {
+						//turn off csfr writing
+						csrf_conf('rewrite',false);
+					}
+				}
+				return true;
+			}
+		]);
+
+		// provide our Auth object to MVCish
+		$MVCish->Auth(new \MyApp\Auth($MVCish));
+
+		// If not included by another file, run now
+		if(get_included_files()[0] == __FILE__) {
+			$MVCish->Run();
+		}
+	?>
+```
+
+// CONTROLLER ********************
+
+
+	we may or may not have a single point of entrance;
+	if we do, we figured out from the url what controller you wanted
+	and ran it. Otherwise, the url took you directly to a php file as
+	usual, and that file calls runController, passing the 'controller' as a closure:
+
+```
+	$MVCish->runController(function() {
+		#do controller stuff
+
+		$response = //
+			// Response should typically be an array, with a 'success' key, eg:
+			// 	$response = ['success' => true];
+
+			// along with any other keys appropriate for the situation. However it
+			// could also be a bool, in which case we'll convert it
+			//	$response = true;
+
+			// otherwise we'll take any evaluates-true response you send.
+			// for example other than the typical array, you might send an object
+			// that can serialize itself for the json view.
+			//	$response = $myJSONobject;
+
+			// if the View doesn't know how to handle your $response, that's on you.
+
+		return $response;
+	});
+
+```
+
+
+// MODEL ************************
+
+	'Model' is only very loosely coupled; just looks for the requested class,
+	Can configure to auto-prepend part of a namespace.
+	examples:
+		$user = $MVCish->Model('\Models\UserQuery'); // returns '\Models\UserQuery'
+		$user = $MVCish->Model('UserQuery');         // same, if 'Models\' configured as MODEL_NAMESPACE
+
+	A model_initialize function can be passed in MVCish options to do any
+	setup work needed for the model when MVCish starts.
+
+
+
+// AUTHORIZATION ************************
+
+	MVCish doesn't know anything about Authentication/Authorization.
+	but if you set an object on $MVCish->Auth() (see myApp.php above), and that object has
+	an "Authorize" method, we'll call it, and pass it anything passed as an 'Authorize' option. 
+	The method should return true if authorized. If it returns false, we'll throw an unauthorized exception. 
+	Your object	can also throw its own \AuntieWarhol\MVCish\Exception if you want to control
+	the messaging (or throw Forbidden instead of Unauthorized, etc)
+
+	MyApp/lib/Auth.php
+```
+	<?php
+	namespace BF;
+
+		class Auth {
+			public function Authorize($authorizeRoles) {
+				#do whatever
+				#if bad
+				return false; #or throw exception
+				#if ok
+				return true;
+			}
+		}
+	}?>
+```	
+
 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
--->
 <!-- ROADMAP -->
 <!--
 ## Roadmap
