@@ -1,23 +1,14 @@
 <?php
 namespace AuntieWarhol\MVCish;
 
-/*
-	It's not quite yet a real MVC, but it's MVC-ish...
-*/
-#FIXME we need to package ourselves as a proper composer package,
-#so we can define & find requirements without a hard path:
-//define('VENDOR_DIR',__DIR__.'/../../vendor/');
-//require_once(VENDOR_DIR.'autoload.php');
-
 use \Monolog\Logger;
 use \Monolog\Handler\StreamHandler;
 use \Monolog\Formatter\LineFormatter;
 use \PHPMailer\PHPMailer\PHPMailer;
+use \Plasticbrain\FlashMessages\FlashMessages;
+
 
 class MVCish {
-
-	const VENDOR_DIR = __DIR__.'/../../vendor/';
-
 
 	public $ENV     = '';
 	public $options = [];
@@ -25,7 +16,6 @@ class MVCish {
 	// CONSTRUCT
 
 	public function __construct($options = []) {
-		//require_once(self::VENDOR_DIR.'autoload.php');
 
 		// stash the options and configured environment
 		$this->options = $options;
@@ -50,12 +40,6 @@ class MVCish {
 			if (empty(session_id())) { session_start(); }
 		}
 
-		// using "psr-4": {"AuntieWarhol\\MVCish\\":"src/"} in composer.json to add to vendor/autoload
-
-		//for testing only, do not leave uncommented
-		//trigger_error("test error handler",E_USER_NOTICE);
-		//trigger_error("test error handler",E_USER_WARNING);
-		//trigger_error("test error handler",E_USER_ERROR);
 	}
 
 	private function _error_handler($errno, $errstr, $errfile, $errline) {
@@ -674,8 +658,6 @@ class MVCish {
 	private $_flashmsg;
 	public function flashmsg() {
 		if (!$this->_flashmsg) {
-#FIXME
-			require_once(self::VENDOR_DIR.'plasticbrain/php-flash-messages/src/FlashMessages.php');
 			$this->_flashmsg  = new \Plasticbrain\FlashMessages\FlashMessages();
 			$this->_flashmsg->setMsgWrapper("<div class='%s'>%s</div>");
 		}
