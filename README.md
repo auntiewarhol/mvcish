@@ -204,13 +204,14 @@ but instead of Run(), call runController() as described below. Whatever logic th
 then be moved to being done inside the closer being passed to runController.
 
 
-// CONTROLLER ********************
+
+#CONTROLLER ********************
 
 
-	we may or may not have a single point of entrance;
-	if we do, we figured out from the url what controller you wanted
-	and ran it. Otherwise, the url took you directly to a php file as
-	usual, and that file calls runController, passing the 'controller' as a closure:
+we may or may not have a single point of entrance;
+if we do, we figured out from the url what controller you wanted
+and ran it. Otherwise, the url took you directly to a php file as
+usual, and that file calls runController, passing the 'controller' as a closure:
 
 ```
 $MVCish->runController(function() {
@@ -231,36 +232,79 @@ $MVCish->runController(function() {
 
     // if the View doesn't know how to handle your $response, that's on you.
 
-	return $response;
+  return $response;
 });
 
 ```
 
 
-// MODEL ************************
+#MODEL ************************
 
-	'Model' is only very loosely coupled; just looks for the requested class,
-	Can configure to auto-prepend part of a namespace.
-	examples:
-		$user = $MVCish->Model('\Models\UserQuery'); // returns '\Models\UserQuery'
-		$user = $MVCish->Model('UserQuery');         // same, if 'Models\' configured as MODEL_NAMESPACE
+'Model' is only very loosely coupled; just looks for the requested class,
+Can configure to auto-prepend part of a namespace.
+examples:
 
-	A model_initialize function can be passed in MVCish options to do any
-	setup work needed for the model when MVCish starts. See myApp.php above.
+	$user = $MVCish->Model('\Models\UserQuery'); // returns '\Models\UserQuery'
+	$user = $MVCish->Model('UserQuery');         // same, if 'Models\' configured as MODEL_NAMESPACE
+
+A model_initialize function can be passed in MVCish options to do any
+setup work needed for the model when MVCish starts. See myApp.php above.
+
+
+#VIEW ************************
+
+Currently defined Views:
+
+```
+  'html' => true, 'json' => true, 'stream' => true,
+  'csv' => true, 'csvexcel' => true, 'xml' => true,
+  'text' => true
+```
+
+
+if the configured or default templateDirectory is MyApp/MVCish/templates,
+look for primary controller templates by default in MyApp/MVCish/templates/controllers,
+while fragments or master tempates may be in MyApp/MVCish/templates/otherdirs.
+
+default does not use a master template, just renders the controller template.
+but subclasses may wish to define a master template into which the controller
+html will be inserted.
+
+
+The client application can use (pre-loaded or autoloadable) subclasses. This allows the 
+application to create a renderClass that prepares template data and/or provides a master template.
+App can have a subclass for each site section where these things might be
+different (home pages vs account pages vs admin pages, etc).
+The class is provided via MVCish->options, so if there's just one, it
+could be provided in app-config.php, or if there are multiple, then
+a controller can set the one it uses in Run options.
+The class may be defined like:
+
+    namespace \MyApp\Render;
+    class Account extends \AuntieWarhol\MVCish\View\Render {
+       ...override/add methods as needed to render an Account template
+    }
+
+ and then Controller uses like:
+    $MVCish->Run(function($self){
+       ...my controller code
+    },[
+       'renderClass' => '\MyApp\Render\Account'
+    ]);
 
 
 
-// AUTHORIZATION ************************
+#AUTHORIZATION ************************
 
-	MVCish doesn't know anything about Authentication/Authorization.
-	but if you set an object on $MVCish->Auth() (see myApp.php above), and that object has
-	an "Authorize" method, we'll call it before running the controller, and pass it anything 
-	passed as an 'Authorize' option. The method should return true if authorized. If it returns 
-	false, we'll throw an unauthorized exception. Your object can also throw its own 
-	\AuntieWarhol\MVCish\Exception if you want to control the messaging 
-	(or throw Forbidden instead of Unauthorized, etc)
+MVCish doesn't know anything about Authentication/Authorization.
+but if you set an object on $MVCish->Auth() (see myApp.php above), and that object has
+an "Authorize" method, we'll call it before running the controller, and pass it anything 
+passed as an 'Authorize' option. The method should return true if authorized. If it returns 
+false, we'll throw an unauthorized exception. Your object can also throw its own 
+\AuntieWarhol\MVCish\Exception if you want to control the messaging 
+(or throw Forbidden instead of Unauthorized, etc)
 
-	MyApp/lib/Auth.php
+MyApp/lib/Auth.php
 ```
 <?php
   namespace MyApp;
