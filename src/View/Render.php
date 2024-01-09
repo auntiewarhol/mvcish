@@ -175,7 +175,7 @@ class Render {
 		}
 	}
 
-	final private function getValidFullPathToFile($templateFile,$templateDirectory=null) {
+	final public function getValidFullPathToFile($templateFile,$templateDirectory=null) {
 
 		// if begins with /, consider it absolute from document root
 		if (substr($templateFile,0,1) == DIRECTORY_SEPARATOR) {
@@ -220,7 +220,7 @@ class Render {
 	}
 
 	// return $dir with guaranteed trailing /
-	final private function cleanDirectoryName($dir) {
+	final public function cleanDirectoryName($dir) {
 		return rtrim($dir,DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
 	}
 

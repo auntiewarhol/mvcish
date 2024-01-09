@@ -1,8 +1,7 @@
 <?php
 namespace AuntieWarhol\MVCish\Util;
-use Pdp\Rules;
-use Pdp\Domain;
-use Symfony\Polyfill\Intl\Idn
+use Symfony\Polyfill\Intl\Idn;
+use AuntieWarhol\MVCish\Util\DomainParser;
 
 
 class Validator {
@@ -118,9 +117,8 @@ class Validator {
 
 					$parsedHost = parse_url($modvalue, PHP_URL_HOST));
 
-					$publicSuffixList = Rules::fromPath('/path/to/cache/public-suffix-list.dat');
-					$domain = Domain::fromIDNA2008($parsedHost);
-					$result = $publicSuffixList->resolve($domain);
+					$parser = new \AuntieWarhol\MVCish\Util\DomainParser();
+					$result = $parser->resolvePublicSuffixList($parsedHost);
 					if ($result->suffix()->isICANN()) {
 
 						if ($filtered !== false ) {

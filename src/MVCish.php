@@ -196,7 +196,7 @@ class MVCish {
 	private $appDirectory = null;
 	public function getAppDirectory() {
 		if (!isset($this->appDirectory)) {
-			if ($this->options['appDirectory']) {
+			if (!empty($this->options['appDirectory'])) {
 				$this->appDirectory =
 					rtrim($this->options['appDirectory'],DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
 			}
@@ -385,10 +385,10 @@ class MVCish {
 
 	private function runController($controller) {
 		/*
-			unlike a real MVC, we don't (yet) have a single point of entrance;
-			if we did, we'd figure out from the url what controller you wanted
-			and run it. Instead, the url takes you directly to a php file as
-			usual, and that file runs us, passing the 'controller' as a closure:
+			we may or may not have a single point of entrance;
+			if we do, we figured out from the url what controller you wanted
+			and ran it. Otherwise, the url took you directly to a php file as
+			usual, and that file ran us, passing the 'controller' as a closure:
 		*/
 
 		if ((!empty($controller)) || ($controller = $this->getUrlController())) {
@@ -663,9 +663,18 @@ class MVCish {
 		return $this->_validator;
 	}
 
+	private $_domainParser;
+	public function domainParser() {
+		if (!$this->_domainParser) {
+			$this->_domainParser = new Util\DomainParser();
+		}
+		return $this->_validator;
+	}
+
 	private $_flashmsg;
 	public function flashmsg() {
 		if (!$this->_flashmsg) {
+#FIXME
 			require_once(self::VENDOR_DIR.'plasticbrain/php-flash-messages/src/FlashMessages.php');
 			$this->_flashmsg  = new \Plasticbrain\FlashMessages\FlashMessages();
 			$this->_flashmsg->setMsgWrapper("<div class='%s'>%s</div>");
