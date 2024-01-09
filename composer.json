@@ -21,6 +21,7 @@
         "jeremykendall/php-domain-parser": "^6.0",
         "symfony/polyfill-intl-idn": "^1.28",
         "symfony/http-client": "^6.4",
-        "plasticbrain/php-flash-messages": "^1.0"
+        "plasticbrain/php-flash-messages": "^1.0",
+        "enrise/urihelper": "^1.0"
 	}
 }

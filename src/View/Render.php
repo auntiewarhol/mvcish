@@ -1,7 +1,6 @@
 <?php
 namespace AuntieWarhol\MVCish\View;
 
-require_once(\AuntieWarhol\MVCish\MVCish::VENDOR_DIR.'vanilla/htmlawed/src/htmLawed/htmLawed.php');
 
 class Render {
 

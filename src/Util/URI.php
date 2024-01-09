@@ -1,7 +1,7 @@
 <?php
 namespace AuntieWarhol\MVCish\Util;
 
-require_once(\AuntieWarhol\MVCish\MVCish::VENDOR_DIR.'enrise/urihelper/src/Enrise/Uri.php');
+use Enrise\Uri;
 
 class URI {
 
