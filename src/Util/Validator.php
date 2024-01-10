@@ -115,7 +115,7 @@ class Validator {
 						return true;
 					}
 
-					$parsedHost = parse_url($modvalue, PHP_URL_HOST));
+					$parsedHost = parse_url($modvalue, PHP_URL_HOST);
 
 					$parser = new \AuntieWarhol\MVCish\Util\DomainParser();
 					$result = $parser->resolvePublicSuffixList($parsedHost);
