@@ -162,7 +162,8 @@ class Render {
 		if ($output) {
 			if ($this->MVCish->ENV != 'PROD') {
 				// tidy up the html so view-source is comprehensible
-				$clean = hl_tidy($html, 't', 'span');
+				$clean = \AuntieWarhol\MVCish\Util\HtmLawed::call('hl_tidy',[$html, 't', 'span']);
+				if (empty($clean)) $clean = '';
 				echo substr($clean, strpos($clean, "\n")+1);
 			}
 			else {
