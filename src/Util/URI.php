@@ -1,8 +1,6 @@
 <?php
 namespace AuntieWarhol\MVCish\Util;
 
-use Enrise\Uri;
-
 class URI {
 
 	/* Uri helpers. Doles much of the work out to Enrise\Uri */
@@ -39,8 +37,9 @@ class URI {
 	}
 
 	public function parse($uri) {
-		$parsed = new \Enrise\Uri($uri);
-		if ($parsed->isRelative()) {
+
+		$parsed = parse_url($uri);
+		if (empty($parsed['host'])) { // uri isRelative
 			if (substr($uri,0,1) == '/') {
 				$uri = $this->getCurrentSchemeHost().$uri;
 			}
@@ -60,7 +59,7 @@ class URI {
 				}
 				$uri = $parts['scheme'].'://'.$parts['host'].(isset($path) ? $path : '' ).$uri;
 			}
-			$parsed = new \Enrise\Uri($uri);
+			$parsed = new \League\Uri\Uri($uri);
 		}
 		return $parsed;
 	}
