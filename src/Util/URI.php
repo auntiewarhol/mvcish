@@ -38,8 +38,8 @@ class URI {
 
 	public function parse($uri) {
 
-		$parsed = parse_url($uri);
-		if (empty($parsed['host'])) { // uri isRelative
+		$parsed = new \Wa72\Url\Url($uri);
+		if (!$parsed->getHost()) { // uri isRelative
 			if (substr($uri,0,1) == '/') {
 				$uri = $this->getCurrentSchemeHost().$uri;
 			}
