@@ -59,7 +59,7 @@ class URI {
 				}
 				$uri = $parts['scheme'].'://'.$parts['host'].(isset($path) ? $path : '' ).$uri;
 			}
-			$parsed = new \League\Uri\Uri($uri);
+			$parsed = \League\Uri\Uri::new($uri);
 		}
 		return $parsed;
 	}
