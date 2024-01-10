@@ -652,7 +652,7 @@ class MVCish {
 		if (!$this->_domainParser) {
 			$this->_domainParser = new Util\DomainParser();
 		}
-		return $this->_validator;
+		return $this->_domainParser;
 	}
 
 	private $_flashmsg;
