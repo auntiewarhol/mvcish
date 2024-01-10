@@ -59,7 +59,7 @@ class URI {
 				}
 				$uri = $parts['scheme'].'://'.$parts['host'].(isset($path) ? $path : '' ).$uri;
 			}
-			$parsed = \League\Uri\Uri::new($uri);
+			$parsed = new \Wa72\Url\Url($uri);
 		}
 		return $parsed;
 	}
@@ -77,7 +77,7 @@ class URI {
 			$newq = http_build_query($params);
 		}
 		$parsed->setQuery($newq);
-		return $parsed->getUri();
+		return $parsed->write();
 	}
 	// deprecated alias
 	public function addToQuery($uri=null,$params=[]) {

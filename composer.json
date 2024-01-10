@@ -23,6 +23,6 @@
         "symfony/http-client": "^6.4",
         "plasticbrain/php-flash-messages": "^1.0",
         "vanilla/htmlawed": "^2.2",
-        "league/uri": "^7.0"
+        "wa72/url": "^0.7.1"
 	}
 }
