@@ -839,7 +839,7 @@ class MVCish {
 		// otherwise encoding quotes is usually a good idea
 		$flags = isset($options['FLAGS']) ? $options['FLAGS'] : ENT_QUOTES;
 
-		return htmlspecialchars(stripslashes($val),$flags);
+		return htmlspecialchars(stripslashes(isset($val) ? $val : ''),$flags);
 	}
 }
 ?>
