@@ -201,7 +201,7 @@ websiteroot/MyApp/myApp.php
 
 Legacy file-in-place use would work similarly. Go into the legacy file, construct an $MVCish object as above, 
 but instead of Run(), call runController() as described below. Whatever logic the legacy file was doing would 
-then be moved to being done inside the closer being passed to runController.
+then be moved to being done inside the closure being passed to runController.
 
 
 
@@ -327,16 +327,21 @@ MyApp/lib/Auth.php
 
 
 <!-- ROADMAP -->
-<!--
 ## Roadmap
 
+There are a few things where I'm returning or receiving data which I know I need to make into a proper class. Response, URI, View, offhand. I really don't recommend anyone else use this until I've done that.
 
+I am about to use this in a second project for the first time, and I'm going to try and use the process to develop an install / build-starter-site script. And improve the docs. 
+
+Once I've done those things, I think at that point, I might say go for it, if you're so inclined.
+
+
+(boilerplate)
 See the [open issues](https://github.com/auntiewarhol/mvcish/issues) for a full list of proposed features (and known issues).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
--->
 <!-- CONTRIBUTING -->
 ## Contributing
 
