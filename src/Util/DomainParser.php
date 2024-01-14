@@ -13,10 +13,19 @@ class DomainParser {
 	// wrapper around php-domain-parser to handle the caching of the public list,
 	// and to abstract away some of its formalities
 	public function __construct() {	
+
+		$cacheDir = dirname(__FILE__).'/.dpcache';
+		if (!(is_dir($cacheDir) && is_writable($cacheDir))) {
+			if (!mkdir($cacheDir,0777)) {
+				$cacheDir = sys_get_temp_dir();
+			}
+		}
+			
+
 		$this->_lists = [];
 		$this->_files = [
-			'publicSuffix' => $this->filesCacheDir().'public_suffix_list.dat',
-			'tld'          => $this->filesCacheDir().'tlds-alpha-by-domain.txt'
+			'publicSuffix' => $cacheDir.'/public_suffix_list.dat',
+			'tld'          => $cacheDir.'/tlds-alpha-by-domain.txt'
 		];
 		$this->_fromPathClass = [
 			'publicSuffix' => 'Pdp\Rules',
@@ -26,10 +35,6 @@ class DomainParser {
 			'publicSuffix' => 'https://publicsuffix.org/list/public_suffix_list.dat',
 			'tld'          => 'https://data.iana.org/TLD/tlds-alpha-by-domain.txt'
 		];
-	}
-
-	public function filesCacheDir() {
-		return dirname(__FILE__).'/DomainParser/cache/';
 	}
 
 	public function publicSuffixListFile() {
@@ -49,12 +54,13 @@ class DomainParser {
 				return true;
 			}
 		}
-		
+	
 		$client = HttpClient::create();
 		$response = $client->request('GET', $this->_URI[$which]);
 		if ($response->getStatusCode() == 200) {
-			file_put_contents($file,$response->getContent());
-			return true;
+			if (file_put_contents($file,$response->getContent())) {
+				return true;
+			}
 		}
 		return false;
 	}
