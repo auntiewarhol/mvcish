@@ -20,7 +20,7 @@
         "phpmailer/phpmailer": "^6.0",
         "jeremykendall/php-domain-parser": "^6.0",
         "symfony/polyfill-intl-idn": "^1.28",
-        "symfony/http-client": "^6.4",
+        "symfony/http-client": "^6",
         "plasticbrain/php-flash-messages": "^1.0",
         "vanilla/htmlawed": "^2.2",
         "wa72/url": "^0.7.1"
