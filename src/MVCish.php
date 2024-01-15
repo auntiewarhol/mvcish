@@ -43,6 +43,9 @@ class MVCish {
 	}
 
 	private function _error_handler($errno, $errstr, $errfile, $errline) {
+		$er = error_reporting();
+		if ($er == 0 || $er == 4437) return true; //4437=php8 hack
+
 		$msg = [$this->_translate_errno($errno).": $errstr; line $errline:$errfile"];
 
 		$exception = null;
