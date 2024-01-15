@@ -10,22 +10,25 @@ class DomainParser {
 	const pslTTLsec = 86400; //24hr
 
 
-	// wrapper around php-domain-parser to handle the caching of the public list,
-	// and to abstract away some of its formalities
-	public function __construct() {	
+	// wrapper around php-domain-parser, to handle the caching of the public list using
+	// the application's runtime directory, and to abstract away some formalities
 
-		$cacheDir = dirname(__FILE__).'/.dpcache';
+	public $MVCish;
+	public function __construct(\AuntieWarhol\MVCish\MVCish $MVCish) {
+		$this->MVCish = $MVCish;
+
+		$cacheDir = $this->MVCish->getRuntimeDirectory().'.dpcache';
 		if (!(is_dir($cacheDir) && is_writable($cacheDir))) {
-			if (!mkdir($cacheDir,0777)) {
-				$cacheDir = sys_get_temp_dir();
+			if (!mkdir($cacheDir,0755)) {
+				throw new \AuntieWarhol\MVCish\Exception\ServerError(
+					"Failed to find or create runtime cache directory for public domain listfiles");
 			}
 		}
-			
 
 		$this->_lists = [];
 		$this->_files = [
-			'publicSuffix' => $cacheDir.'/public_suffix_list.dat',
-			'tld'          => $cacheDir.'/tlds-alpha-by-domain.txt'
+			'publicSuffix' => $cacheDir.DIRECTORY_SEPARATOR.'public_suffix_list.dat',
+			'tld'          => $cacheDir.DIRECTORY_SEPARATOR.'tlds-alpha-by-domain.txt'
 		];
 		$this->_fromPathClass = [
 			'publicSuffix' => 'Pdp\Rules',
@@ -35,6 +38,9 @@ class DomainParser {
 			'publicSuffix' => 'https://publicsuffix.org/list/public_suffix_list.dat',
 			'tld'          => 'https://data.iana.org/TLD/tlds-alpha-by-domain.txt'
 		];
+	}
+	function __destruct() {
+		unset($this->MVCish);
 	}
 
 	public function publicSuffixListFile() {

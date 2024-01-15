@@ -4,7 +4,6 @@ require_once 'vendor/autoload.php';
 
 $MVCish = new \AuntieWarhol\MVCish\MVCish();
 
-use AuntieWarhol\MVCish\Util\DomainParser;
 
 if (!empty($argv[1])) {
 
@@ -14,7 +13,7 @@ if (!empty($argv[1])) {
 	if (empty($parsedHost) && !empty($val)) $parsedHost = $val;
 	echo "using '".$parsedHost."'\n";
 
-	$parser = new \AuntieWarhol\MVCish\Util\DomainParser();
+	$parser = $MVCish->domainParser();
 	if ($result = $parser->resolvePublicSuffixList($parsedHost)) {
 		$suffix = $result->suffix();
 		if ($suffix->isICANN()) {

@@ -1,13 +1,18 @@
 <?php
 namespace AuntieWarhol\MVCish\Util;
 use Symfony\Polyfill\Intl\Idn;
-use AuntieWarhol\MVCish\Util\DomainParser;
 
 
 class Validator {
 
 
-	public function __construct() {	}
+	public $MVCish;
+	public function __construct(\AuntieWarhol\MVCish\MVCish $MVCish) {
+		$this->MVCish = $MVCish;
+	}
+	function __destruct() {
+		unset($this->MVCish);
+	}
 
 
 	/* pass no args, get the validators hash;
@@ -117,7 +122,7 @@ class Validator {
 
 					$parsedHost = parse_url($modvalue, PHP_URL_HOST);
 
-					$parser = new \AuntieWarhol\MVCish\Util\DomainParser();
+					$parser = $this->MVCish->domainParser();
 					$result = $parser->resolvePublicSuffixList($parsedHost);
 					if ($result->suffix()->isICANN()) {
 

@@ -180,15 +180,37 @@ class MVCish {
 	private $appDirectory = null;
 	public function getAppDirectory() {
 		if (!isset($this->appDirectory)) {
-			if (!empty($this->options['appDirectory'])) {
+			if (empty($this->options['appDirectory'])) {
+				trigger_error("Using MVCish without setting an application directory is discouraged; using tmpfiles.", E_USER_WARNING);
+				$this->appDirectory = sys_get_temp_dir().DIRECTORY_SEPARATOR;
+			}
+			else {
 				$this->appDirectory =
 					rtrim($this->options['appDirectory'],DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
 			}
-			else {
-				throw new \AuntieWarhol\MVCish\Exception("Must provide appDirectory option");
-			}
 		}
 		return $this->appDirectory;
+	}
+	private $runtimeDirectory = null;
+	public function getRuntimeDirectory() {
+		if (!isset($this->runtimeDirectory)) {
+			// you can set this directly in options
+			// or we will create it in the appDirectory
+			if (empty($this->options['runtimeDirectory'])) {
+				$this->runtimeDirectory = $this->getAppDirectory()."runtime".DIRECTORY_SEPARATOR;
+
+			}
+			else {
+				$this->runtimeDirectory =
+					rtrim($this->options['runtimeDirectory'],DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
+			}
+			if (!file_exists($this->runtimeDirectory)) {
+				if (!mkdir($this->runtimeDirectory,0755,true)) {
+					throw new \AuntieWarhol\MVCish\Exception\ServerError("Failed to find or create runtime directory");
+				}
+			}
+		}
+		return $this->runtimeDirectory;
 	}
 
 	private $rootTemplateDirectory = null;
@@ -601,7 +623,7 @@ class MVCish {
 
 				$logfile = (isset($logConfig) && isset($logConfig['LOGFILE'])) ?
 					$logConfig['LOGFILE'] :
-					$this->getAppDirectory().implode(DIRECTORY_SEPARATOR,['runtime','logs',$name.".log"]);
+					$this->getRuntimeDirectory().'logs'.DIRECTORY_SEPARATOR.$name.'.log';
 
 				$logdir = pathinfo($logfile,PATHINFO_DIRNAME);
 				if (!file_exists($logdir)) {
@@ -642,7 +664,7 @@ class MVCish {
 	private $_validator;
 	public function validator() {
 		if (!$this->_validator) {
-			$this->_validator = new Util\Validator();
+			$this->_validator = new Util\Validator($this);
 		}
 		return $this->_validator;
 	}
@@ -650,7 +672,7 @@ class MVCish {
 	private $_domainParser;
 	public function domainParser() {
 		if (!$this->_domainParser) {
-			$this->_domainParser = new Util\DomainParser();
+			$this->_domainParser = new Util\DomainParser($this);
 		}
 		return $this->_domainParser;
 	}
