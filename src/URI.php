@@ -21,7 +21,7 @@ class URI implements \JsonSerializable {
 	}
 	public function __toString(): string  { return $this->url(); }
 
-	public function jsonSerialize():mixed { return $this->toArray(); }
+	public function jsonSerialize():mixed { return $this->url(); }
 
 	public function toArray() {
 		return array_merge($this->getComponents(),[
