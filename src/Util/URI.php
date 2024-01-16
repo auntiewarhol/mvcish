@@ -7,11 +7,11 @@ class URI {
 
 	public function __construct() {	}
 
-	public function getCurrentScheme() {
-		return ((!empty($_SERVER['HTTPS'])) && $_SERVER['HTTPS'] !== 'off') ||
+	public function getCurrentScheme($withSep=true) {
+		return (((!empty($_SERVER['HTTPS'])) && $_SERVER['HTTPS'] !== 'off') ||
 			(isset($_SERVER['SERVER_PORT']) && ($_SERVER['SERVER_PORT'] == 443)) ||
 			(isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https')
-		? "https" : "http";
+		? "https" : "http") . ($withSep ? '://' : '');
 	}
 
 	//deprecated alias
@@ -30,7 +30,7 @@ class URI {
 	}
 
 	public function getCurrentSchemeHost() {
-		return $this->getCurrentScheme()."://".$this->getCurrentHost();
+		return $this->getCurrentScheme().$this->getCurrentHost();
 	}
 
 	public function getCurrentUrl() {
@@ -46,7 +46,7 @@ class URI {
 		$uri = new \AuntieWarhol\MVCish\URI($url,$params);
 		if ($uri->isRelative()) {
 
-			if ($scheme = $this->getCurrentScheme()) {
+			if ($scheme = $this->getCurrentScheme(false)) {
 				$uri->scheme($scheme);
 			}
 			if ($host = $this->getCurrentHost()) {
