@@ -23,27 +23,15 @@ class URI {
 		if ($parsed = $this->getComponents()) {
 
 			if ($this->isAbsolute()) {
-	
-				$pass      = $parsed['pass'] ?? null;
-				$user      = $parsed['user'] ?? null;
-				$userinfo  = $pass !== null ? "$user:$pass" : $user;
-				$port      = $parsed['port'] ?? 0;
-				$scheme    = $parsed['scheme'] ?? "";
-				$query     = $parsed['query'] ?? "";
-				$fragment  = $parsed['fragment'] ?? "";
-				$authority = (
-					($userinfo !== null ? "$userinfo@" : "") .
-					($parsed['host'] ?? "") .
-					($port ? ":$port" : "")
-				);
-				$base =
-					(\strlen($scheme) > 0 ? "$scheme:" : "") .
-					(\strlen($authority) > 0 ? "//$authority" : "") .
-					($parsed['host'] ?? "");
+				$origin = $this->origin();
 			}
-			$this->_url = ($base ?? "") .
-				($parsed['path'] ?? "") .
-				(\strlen($query) > 0 ? "?$query" : "") .
+			$path      = $parsed['path']     ?? "";
+			$query     = $parsed['query']    ?? "";
+			$fragment  = $parsed['fragment'] ?? "";
+			$this->_url =
+				($origin ?? "") .
+				(\strlen($path)     > 0 ? $path : "") .
+				(\strlen($query)    > 0 ? "?$query" : "") .
 				(\strlen($fragment) > 0 ? "#$fragment" : "");
 		}
 	}
@@ -72,12 +60,45 @@ class URI {
 		}
 	}
 
+
+	// Scheme
 	public function scheme($new=null)   { return $this->urlComponent('scheme',$new);   }
+
+	// Authority
 	public function host($new=null)     { return $this->urlComponent('host',$new);     }
 	public function port($new=null)     { return $this->urlComponent('port',$new);     }
 	public function user($new=null)     { return $this->urlComponent('user',$new);     }
 	public function pass($new=null)     { return $this->urlComponent('pass',$new);     }
-	public function fragment($new=null) { return $this->urlComponent('fragment',$new); }
+	public function authority() {
+		if ($parsed = $this->getComponents()) {
+			if ($this->isAbsolute()) {
+				$pass      = $parsed['pass'] ?? null;
+				$user      = $parsed['user'] ?? null;
+				$host      = $parsed['host'] ?? null;
+				$port      = $parsed['port'] ?? null;
+				$userinfo  = $user == null ? null :
+					($pass != null ? "$user:$pass" : $user);
+				return (
+					($userinfo != null ? "$userinfo@" : "") .
+					($host ?? "") .
+					($port ? ":$port" : "")
+				);
+			}
+		}
+	}
+
+	// Origin
+	public function origin() {
+		if ($parsed = $this->getComponents()) {
+			if ($this->isAbsolute()) {
+				$scheme    = $parsed['scheme'] ?? "";
+				$authority = $this->authority();
+				return (\strlen($scheme) > 0 ? "$scheme:" : "") .
+					(\strlen($authority) > 0 ? "//$authority" : "");
+			}
+		}
+	}
+
 
 	// Path
 	public function path()     { return $this->urlComponent('path');     }
@@ -90,35 +111,32 @@ class URI {
 	public function isAbsolute() { return $this->host() ? true  : false; }
 
 
-	// Query handling
+
+	// Query 
 	private $_qryParams = null;
-	private $_qryString = null;
-	public function query($new=null) {
+	public function query($new=null,$newParams=null) {
 		if (isset($new)) {
-			$this->_qryString = $new;
 			$this->_qryParams = null;
+			$this->urlComponent('query',$new);
 		}
-		else if (empty($this->_qryString)) {
+		else {
+			if (isset($newParams)) {
+				$this->_qryParams = $newParams;
+			}
 			if (isset($this->_qryParams)) {
-				$this->_qryString = http_build_query($this->_qryParams);
-			}
-			else if ($q = $this->urlComponent('query')) {
-				$this->_qryString = $q;
+				$this->urlComponent('query',http_build_query($this->_qryParams));
 			}
 		}
-		return $this->_qryString;
+		return $this->urlComponent('query');
 	}
 	public function queryParams($new=null) {
 		if (isset($new)) {
-			$this->_qryParams = $new;
-			$this->_qryString = null;
+			$this->query(null,$new);
 		}
-		else if (!isset($this->_qryParams)) {
-			if ($q = $this->query()) {
-				$params = [];
-				parse_str($q, $params);
-				$this->_qryParams = $params;
-			}
+		else if ((!isset($this->_qryParams)) && ($q = $this->query())) {
+			$params = [];
+			parse_str($q, $params);
+			$this->_qryParams = $params;
 		}
 		return $this->_qryParams;
 	}
@@ -135,4 +153,7 @@ class URI {
 		}
 	}
 
+
+	// Fragment
+	public function fragment($new=null) { return $this->urlComponent('fragment',$new); }
 }
