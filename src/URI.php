@@ -28,6 +28,10 @@ class URI {
 			$path      = $parsed['path']     ?? "";
 			$query     = $parsed['query']    ?? "";
 			$fragment  = $parsed['fragment'] ?? "";
+
+			//error_log("origin= ".(empty($origin) ? 'null' : $origin));
+			//error_log("path= $path, query= $query, frag= $fragment");
+
 			$this->_url =
 				($origin ?? "") .
 				(\strlen($path)     > 0 ? $path : "") .
@@ -39,16 +43,16 @@ class URI {
 
 	private $_parsed = null;
 	public function getComponents($setComponents=null) {
-		if (is_array($setComponents)) {
+		if (empty($this->_parsed)) {
 			$this->_parsed = parse_url($this->_url);
+		}
+		if (is_array($setComponents)) {
 			foreach($setComponents as $k => $v) {
 				$this->_changed = true;
 				$this->_parsed[$k] = $v;
 			}
 		}
-		elseif (empty($this->_parsed)) {
-			$this->_parsed = parse_url($this->_url);
-		}
+		//error_log("parsed= ".print_r($this->_parsed,true));
 		return $this->_parsed;
 	}
 	public function urlComponent($name,$new=null) {
@@ -93,6 +97,7 @@ class URI {
 			if ($this->isAbsolute()) {
 				$scheme    = $parsed['scheme'] ?? "";
 				$authority = $this->authority();
+				//error_log("scheme= $scheme, auth= $authority");
 				return (\strlen($scheme) > 0 ? "$scheme:" : "") .
 					(\strlen($authority) > 0 ? "//$authority" : "");
 			}
