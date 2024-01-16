@@ -41,12 +41,12 @@ if ((!empty($argv[1])) && (!empty($argv[2]))) {
 	else if ($argv[1] == 'U') {
 		$u = $MVCish->uri()->uriFor($val,['foo'=>'bar']);
 		echo "uriFor= ".$u."\n";
-		echo "u= ".print_r($u,true)."\n";
+		echo "u= ".print_r($u->toArray(),true)."\n";
 	}
 	else if ($argv[1] == 'A') {
 		$u = $MVCish->uri()->assetUriFor($val);
 		echo "uriFor= ".$u."\n";
-		echo "u= ".print_r($u,true)."\n";
+		echo "u= ".print_r($u->toArray(),true)."\n";
 	}
 }
 
