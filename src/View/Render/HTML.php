@@ -675,10 +675,15 @@ class HTML {
 		] AS $k => $def) {
 			if (isset($node[$k])) {
 
+
+				if (is_object($node[$k]) && method_exists($node[$k], '__toString')) {
+					$node[$k] = $node[$k]->__toString();
+				}
+
 				if (is_string($node[$k])) {
 					$anchorlink = [$def['key'] => $node[$k]];
 				}
-				else {
+				else if (is_array($node[$k])) {
 					$anchorlink = $node[$k];
 				}
 				unset($def['key']);
