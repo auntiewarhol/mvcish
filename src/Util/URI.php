@@ -11,8 +11,9 @@ class URI {
 		return ((!empty($_SERVER['HTTPS'])) && $_SERVER['HTTPS'] !== 'off') ||
 			(isset($_SERVER['SERVER_PORT']) && ($_SERVER['SERVER_PORT'] == 443)) ||
 			(isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https')
-		? "https://" : "http://";
+		? "https" : "http";
 	}
+
 	//deprecated alias
 	public function getProtocol() {
 		return $this->getCurrentScheme();
@@ -29,25 +30,53 @@ class URI {
 	}
 
 	public function getCurrentSchemeHost() {
-		return $this->getProtocol().$this->getCurrentHost();
+		return $this->getCurrentScheme()."://".$this->getCurrentHost();
 	}
 
 	public function getCurrentUrl() {
 		return $this->getCurrentSchemeHost() . $_SERVER["REQUEST_URI"];
 	}
 
-	public function uriFor($uri,$params=[]) {
-		if (empty($uri)) $uri = isset($_SERVER['REDIRECT_URL'])
+
+	public function uriFor($url,$params=[]) {
+		if (empty($url)) $url = isset($_SERVER['REDIRECT_URL'])
 			? $_SERVER['REDIRECT_URL'] : $_SERVER['PHP_SELF'];
 		if (!isset($params)) $params = [];
 
-		return new \AuntieWarhol\MVCish\URI($uri,$params);
+		$uri = new \AuntieWarhol\MVCish\URI($url,$params);
+		if ($uri->isRelative()) {
+
+			if ($scheme = $this->getCurrentScheme()) {
+				$uri->scheme($scheme);
+			}
+			if ($host = $this->getCurrentHost()) {
+				$uri->host($host);
+			}
+
+			if (substr($url,0,1) != '/') {
+				$parts = parse_url($this->getCurrentUrl());
+				if (isset($parts['path'])) {
+					//if path is directory (ends with /)
+					if (substr($parts['path'],-1) == '/') {
+						$path = $parts['path'];
+					}
+					//get path up through directory
+					else {
+						$pathparts = explode('/',$parts['path']);
+						array_pop($pathparts);
+						$path = implode('/',$pathparts);
+					}
+					$uri->path($path);
+				}
+			}
+		}
+		return $uri;
 	}
 
 	// adds the v=time query param to js/css links to avoid browser caching issues
-	public function assetUriFor($urlStr,$params = [],$opts = []) {
-		$uri = new \AuntieWarhol\MVCish\URI($urlStr,$params);
-		if ($fullpath = $uri->getFullPath()) {
+	public function assetUriFor($url,$params = [],$opts = []) {
+		$uri = new \AuntieWarhol\MVCish\URI($url,$params);
+		if ($fullpath = $uri->systemPath()) {
 			if (file_exists($fullpath)) {
 				$key = isset($opts['stampkey']) ? $opts['stampkey'] : 'v';
 				$uri->addToQuery([$key => filemtime($fullpath)]);
