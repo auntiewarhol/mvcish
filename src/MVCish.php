@@ -1,26 +1,28 @@
 <?php
 namespace AuntieWarhol\MVCish;
 
+use \Monolog\Level;
 use \Monolog\Logger;
 use \Monolog\Handler\StreamHandler;
-use \Monolog\Formatter\LineFormatter;
 use \PHPMailer\PHPMailer\PHPMailer;
 use \Plasticbrain\FlashMessages\FlashMessages;
 
 
 class MVCish {
 
-	public $ENV     = '';
 	public $options = [];
 
 	// CONSTRUCT
 
-	public function __construct($options = []) {
+	public function __construct(array $options = []) {
 
 		// stash the options and configured environment
 		$this->options = $options;
-		if (isset($this->options['environment']))
-			$this->ENV = $this->options['environment'];
+
+		// Prod/Stage/Local or other
+		$this->Environment(
+			isset($this->options['Environment']) ? $this->options['Environment'] : null
+		);
 
 		// register error handlers
 		if (empty($GLOBALS['MVCISH_IGNORE_ERRORS'])) {
@@ -36,28 +38,27 @@ class MVCish {
 			});
 		}
 		//init PHP session if not command line session
-		if (!(php_sapi_name() == "cli")) {
+		if (!$this->isCLI()) {
 			if (empty(session_id())) { session_start(); }
 		}
-
 	}
 
 	private function _error_handler($errno, $errstr, $errfile, $errline) {
 		$er = error_reporting();
 		if ($er == 0 || $er == 4437) return true; //4437=php8 hack
 
-		$msg = [$this->_translate_errno($errno).": $errstr; line $errline:$errfile"];
+		$msg = [$this->translatePHPerrCode($errno).": $errstr; line $errline:$errfile"];
 
 		$exception = null;
 		$msgMethod = null;
 		if (in_array($errno,[E_USER_ERROR,E_CORE_ERROR,E_ERROR,E_PARSE,E_COMPILE_ERROR])) {
-			$msg[] = "TRACE: ".$this->_get_caller_info();
+			$msg[] = "TRACE: ".$this->getCallerInfo();
 			$exception = new \AuntieWarhol\MVCish\Exception\ServerError();
 			$msgMethod = "error";
 		}
 		elseif (($errno == E_NOTICE) && (substr($errstr,0,11) == 'unserialize')) {
 			// hack to ignore this warning, because the only way to test if something is serialized
-			// is to try and unserialize it, and you can't catch or make it not throw notices. 
+			// is to try and unserialize it. Maybe that should use suppression operator tho?
 		}
 		else {
 			$msgMethod = "warning";
@@ -82,118 +83,124 @@ class MVCish {
 		return true;
 	}
 
-	private function _translate_errno($errno) {
-		$e_type = '';
-		switch ($errno) {
-			case 1: $e_type = 'E_ERROR'; break;
-			case 2: $e_type = 'E_WARNING'; break;
-			case 4: $e_type = 'E_PARSE'; break;
-			case 8: $e_type = 'E_NOTICE'; break;
-			case 16: $e_type = 'E_CORE_ERROR'; break;
-			case 32: $e_type = 'E_CORE_WARNING'; break;
-			case 64: $e_type = 'E_COMPILE_ERROR'; break;
-			case 128: $e_type = 'E_COMPILE_WARNING'; break;
-			case 256: $e_type = 'E_USER_ERROR'; break;
-			case 512: $e_type = 'E_USER_WARNING'; break;
-			case 1024: $e_type = 'E_USER_NOTICE'; break;
-			case 2048: $e_type = 'E_STRICT'; break;
-			case 4096: $e_type = 'E_RECOVERABLE_ERROR'; break;
-			case 8192: $e_type = 'E_DEPRECATED'; break;
-			case 16384: $e_type = 'E_USER_DEPRECATED'; break;
-			case 30719: $e_type = 'E_ALL'; break;
-			default: $e_type = 'E_UNKNOWN'; break;
-		}
-		return $e_type;
-	}
-	function _get_caller_info() {
-		$c = '';
-		$file = '';
-		$func = '';
-		$class = '';
-		$trace = debug_backtrace();
-		if (isset($trace[2])) {
-			$file = $trace[1]['file'];
-			$func = $trace[2]['function'];
-			if ((substr($func, 0, 7) == 'include') || (substr($func, 0, 7) == 'require')) {
-				$func = '';
-			}
-		} else if (isset($trace[1])) {
-			$file = $trace[1]['file'];
-			$func = '';
-		}
-		if (isset($trace[3]['class'])) {
-			$class = $trace[3]['class'];
-			$func = $trace[3]['function'];
-			$file = $trace[2]['file'];
-		} else if (isset($trace[2]['class'])) {
-			$class = $trace[2]['class'];
-			$func = $trace[2]['function'];
-			$file = $trace[1]['file'];
-		}
-		if ($file != '') $file = basename($file);
-		$c = $file . ": ";
-		$c .= ($class != '') ? ":" . $class . "->" : "";
-		$c .= ($func != '') ? $func . "(): " : "";
-		return($c);
-	}
 
 	// CONFIG *************************
 
-	private $_config = null;
-	private function initConfig() {
-		if (isset($this->_config)) return true;
-		$configDir = $this->getAppDirectory().'config';
-		if (is_dir($configDir)) $configDir .= DIRECTORY_SEPARATOR;
-		else $configDir = $this->getAppDirectory();
+	private $_environment;
+	public function Environment($new=null): \AuntieWarhol\MVCish\Environment {
+		if (!$this->_environment) {
+			try {
+				$this->_environment =
+					\AuntieWarhol\MVCish\Environment\Factory::getEnvironment(
+						empty($new) ? 'Production' : $new);
+			}
+			catch(\Exception $e) {
+				throw new \AuntieWarhol\MVCish\Exception\ServerError(
+					'Unable to instantiate Environment "'.$which.'": '
+						. $e->getMessage());
+			}
+		}
+		return $this->_environment;
+	}
 
-		// load configuration
-		$def_config = $configDir.'app-config.php';
-		if (file_exists($def_config) && ($config = include($def_config))) {
-			if (is_array($config)) {
-				$this->_config = $config;
+	private $_appConfig = null;
+	private function initConfig() {
+
+		// if appConfig set in MVCish Options
+		if (isset($this->options['appConfig']) && 
+			($appConfig = $this->options['appConfig'])
+		) {
+
+			if (isset($this->options['appConfigPriority']) &&
+				($this->options['appConfigPriority'] == 'OPTION')
+			) {
+				// Option replaces Environment
+				$this->_appConfig = array_replace(
+					$this->Environment()->getAppConfig(),
+					$this->_getOptionAppConfig()
+				);
 			}
 			else {
-				$this->log('MVCish')->error("Failed to parse array from $def_config");
+				// Environment replaces Option
+				$this->_appConfig = array_replace(
+					$this->_getOptionAppConfig(),
+					$this->Environment()->getAppConfig()
+				);
 			}
 		}
-		if ($this->ENV)	{
-			$env_config = $configDir.'app-config-'.strtolower($this->ENV).'.php';
-
-			if (file_exists($env_config) && ($config_env = include($env_config))) {
-				if (is_array($config_env)) {
-					$this->_config =
-						array_replace($this->_config,$config_env);
-				}
-				else {
-					$this->log('MVCish')->error("Failed to parse array from $env_config");
-				}
-			}
+		else {
+			// only comes from Environment
+			$this->_appConfig = $this->Environment()->getAppConfig();
 		}
-		if (!isset($this->_config)) $this->_config = [];
-		//$this->log('MVCish')->debug("MVCish Config",$this->_config);
+		//$this->log('MVCish')->debug("MVCish appConfig",$this->_appConfig);
 	}
+
+	private function _getOptionAppConfig():array {
+		$result = null;
+		// if appConfig set in MVCish Options
+		if (isset($this->options['appConfig']) && 
+			($appConfig = $this->options['appConfig'])
+		) {
+			if (is_array($appConfig)) {
+				// appConfig has just been passed in as an array
+				$this->_appConfig = $appConfig;
+			}
+			elseif(is_string($appConfig)) {
+				// we have been given an config filename
+				if (file_exists($appConfig)) {
+					try {
+						$result = include($appConfig);
+					}
+					catch(\Throwable $e) {
+						throw new \AuntieWarhol\MVCish\Exception\ServerError(
+							"Failed to parse appConfig from file ".$appConfig
+							.': '.$e->getMessage();
+						);
+					}
+				}
+			}
+		}
+		return (empty($result) ? [] : $result);
+	}
+
 	public function Config($key) {
-		$this->initConfig();
-		if (array_key_exists($key,$this->_config)) {
-			return $this->_config[$key];
+		if (!isset($this->_appConfig)) {
+			$this->initConfig();
+		}
+		if (array_key_exists($key,$this->_appConfig)) {
+			return $this->_appConfig[$key];
 		}
 		return;
 	}
+
 
 	private $appDirectory = null;
 	public function getAppDirectory() {
 		if (!isset($this->appDirectory)) {
 			if (empty($this->options['appDirectory'])) {
-				trigger_error("Using MVCish without setting an application directory is discouraged; using tmpfiles.", E_USER_WARNING);
+				if (!$this->isCLI()) {
+					trigger_error(
+						"Using MVCish without setting an application directory is discouraged; using tmpfiles.",
+						E_USER_WARNING);
+				}
 				$this->appDirectory = sys_get_temp_dir().DIRECTORY_SEPARATOR;
 			}
 			else {
 				$this->appDirectory =
 					rtrim($this->options['appDirectory'],DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
 			}
+
+			if (!file_exists($this->appDirectory)) {
+				if (!mkdir($this->appDirectory,0755,true)) {
+					throw new \AuntieWarhol\MVCish\Exception\ServerError(
+						"Failed to find or create App Directory: ".$this->appDirectory);
+				}
+			}
 		}
 		return $this->appDirectory;
 	}
+
+	// option or default
 	private $runtimeDirectory = null;
 	public function getRuntimeDirectory() {
 		if (!isset($this->runtimeDirectory)) {
@@ -207,15 +214,43 @@ class MVCish {
 				$this->runtimeDirectory =
 					rtrim($this->options['runtimeDirectory'],DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
 			}
+
 			if (!file_exists($this->runtimeDirectory)) {
 				if (!mkdir($this->runtimeDirectory,0755,true)) {
-					throw new \AuntieWarhol\MVCish\Exception\ServerError("Failed to find or create runtime directory");
+					throw new \AuntieWarhol\MVCish\Exception\ServerError(
+						"Failed to find or create runtime directory: ".$this->runtimeDirectory);
 				}
 			}
 		}
 		return $this->runtimeDirectory;
 	}
 
+	// option or default
+	private $appConfigDirectory = null;
+	public function getAppConfigDirectory() {
+		if (!isset($this->appConfigDirectory)) {
+			// you can set this directly in options
+			// or we will create it in the appDirectory
+			if (empty($this->options['appConfigDirectory'])) {
+				$this->appConfigDirectory = $this->getAppDirectory()."config".DIRECTORY_SEPARATOR;
+
+			}
+			else {
+				$this->appConfigDirectory =
+					rtrim($this->options['appConfigDirectory'],DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
+			}
+
+			if (!file_exists($this->appConfigDirectory)) {
+				if (!mkdir($this->appConfigDirectory,0755,true)) {
+					throw new \AuntieWarhol\MVCish\Exception\ServerError(
+						"Failed to find or create appConfig directory: ".$this->appConfigDirectory);
+				}
+			}
+		}
+		return $this->runtimeDirectory;
+	}
+
+	// option or appConfig or default
 	private $rootTemplateDirectory = null;
 	public function getTemplateDirectory($reset = false) {
 		if ($reset || !isset($this->rootTemplateDirectory)) {
@@ -239,6 +274,7 @@ class MVCish {
 		}
 		return $this->rootTemplateDirectory;
 	}
+
 
 	// MODEL ************************
 
@@ -336,36 +372,13 @@ class MVCish {
 	}
 
 	private function logExceptionMessage($e,$basemsg) {
-		$logAs = 'error';
-		$msg = $e->getMessage() ?: '';
-		if ($code = $e->getCode()) {
 
-			if (in_array($code,[404,401,301])) {
-				// skip basemsg & getMessage
-				$msg = "$code: ".$_SERVER['REQUEST_URI'];
-				if (isset($_SERVER['HTTP_REFERER']))
-					$msg .= ' (ref: '.$_SERVER['HTTP_REFERER'].')';
-
-				// don't need to log these in prod
-				if (in_array($code,[401,301])) {
-					$logAs = 'debug';
-				}
-			}
-			else {
-				$msg = "$basemsg $code: $msg";
-				$msg .= ' ('.$e->getFile().': '.$e->getLine().')';
-				if ($this->ENV == 'LOCAL')
-					$msg .= "; TRACE: ".$this->_get_caller_info();
-			}
+		$environment = $this->Environment();
+		if ($logLevel = $environment->getErrCodeLogLevel($errCode)) {
+			$this->log('MVCish')->$logLevel(
+				$environment->buildExceptionMessage($e,$basemsg)
+			);
 		}
-		else {
-			$msg = $basemsg.' '.$msg.' ('.$e->getFile().': '.$e->getLine().')';
-			if (isset($_SERVER['REQUEST_URI']))  $msg .= ' ('.$_SERVER['REQUEST_URI'].')';
-			if (isset($_SERVER['HTTP_REFERER'])) $msg .= ' ('.$_SERVER['HTTP_REFERER'].')';
-			//if ($this->ENV == 'LOCAL')
-				$msg .= "; TRACE: ".$this->_get_caller_info();
-		}
-		$this->log('MVCish')->$logAs($msg);
 	}
 
 	private function authorize() {
@@ -612,6 +625,65 @@ class MVCish {
 
 	// UTILS / MISC ***********************
 
+	public static function isCLI { return php_sapi_name() == "cli"; }
+
+	public static function getCallerInfo() {
+		$c = '';
+		$file = '';
+		$func = '';
+		$class = '';
+		$trace = debug_backtrace();
+		if (isset($trace[2])) {
+			$file = $trace[1]['file'];
+			$func = $trace[2]['function'];
+			if ((substr($func, 0, 7) == 'include') || (substr($func, 0, 7) == 'require')) {
+				$func = '';
+			}
+		} else if (isset($trace[1])) {
+			$file = $trace[1]['file'];
+			$func = '';
+		}
+		if (isset($trace[3]['class'])) {
+			$class = $trace[3]['class'];
+			$func = $trace[3]['function'];
+			$file = $trace[2]['file'];
+		} else if (isset($trace[2]['class'])) {
+			$class = $trace[2]['class'];
+			$func = $trace[2]['function'];
+			$file = $trace[1]['file'];
+		}
+		if ($file != '') $file = basename($file);
+		$c = $file . ": ";
+		$c .= ($class != '') ? ":" . $class . "->" : "";
+		$c .= ($func != '') ? $func . "(): " : "";
+		return($c);
+	}
+
+	public static function translatePHPerrCode($errno) {
+		$e_type = '';
+		switch ($errno) {
+			case 1: $e_type = 'E_ERROR'; break;
+			case 2: $e_type = 'E_WARNING'; break;
+			case 4: $e_type = 'E_PARSE'; break;
+			case 8: $e_type = 'E_NOTICE'; break;
+			case 16: $e_type = 'E_CORE_ERROR'; break;
+			case 32: $e_type = 'E_CORE_WARNING'; break;
+			case 64: $e_type = 'E_COMPILE_ERROR'; break;
+			case 128: $e_type = 'E_COMPILE_WARNING'; break;
+			case 256: $e_type = 'E_USER_ERROR'; break;
+			case 512: $e_type = 'E_USER_WARNING'; break;
+			case 1024: $e_type = 'E_USER_NOTICE'; break;
+			case 2048: $e_type = 'E_STRICT'; break;
+			case 4096: $e_type = 'E_RECOVERABLE_ERROR'; break;
+			case 8192: $e_type = 'E_DEPRECATED'; break;
+			case 16384: $e_type = 'E_USER_DEPRECATED'; break;
+			case 30719: $e_type = 'E_ALL'; break;
+			default: $e_type = 'E_UNKNOWN'; break;
+		}
+		return $e_type;
+	}
+
+
 	private $_logfile;
 	private $_logs = [];
 	public function log($channel = null) {
@@ -642,10 +714,13 @@ class MVCish {
 			}
 
 			$logger  = new Logger($channel);
-			$logEnv  = (($this->ENV == 'PROD') && (php_sapi_name() != "cli")) ?
-				Logger::WARNING : Logger::DEBUG;
+			$loggerLevel = $this->Environment()->getLoggerLevel() ?= 'Debug';
+			$logEnv  = Level::$LoggerLevel;
+
 			$handler = new StreamHandler($this->_logfile,$logEnv);
-			$handler->setFormatter(new LineFormatter(null,null,false,true));
+			if ($formatter = $this->Environment()->getLineFormatter()) {
+				$handler->setFormatter($formatter);
+			}
 			$logger->pushHandler($handler);
 			$this->_logs[$channel] = $logger;
 		}
@@ -781,7 +856,9 @@ class MVCish {
 				$subject = $emaildata['Subject'];
 			}
 			if (!isset($subject)) $subject = $defaultSub;
-			if ($this->ENV != 'PROD') $subject .= ' ('.$this->ENV.')';
+
+			// hook to allow environment to modify subject (add '(DEV)' or whatever)
+			$subject = $this->Environment()->processEmailSubjectLine($subject);
 			$mail->Subject = $subject;
 
 			// send HTML & optionally AltBody, or Body

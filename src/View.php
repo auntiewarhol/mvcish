@@ -68,7 +68,7 @@ class View {
 			) {
 				$this->_view = strtolower($_REQUEST['view']);
 
-			} elseif (php_sapi_name() == "cli") {
+			} elseif ($this->MVCish()->isCLI()) {
 				$this->_view = 'text';
 
 			} else {

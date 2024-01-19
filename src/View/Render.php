@@ -4,14 +4,12 @@ namespace AuntieWarhol\MVCish\View;
 
 class Render {
 
-	public $MVCish;
-
+	private $MVCish;
 	public function __construct(\AuntieWarhol\MVCish\MVCish $MVCish) {
 		$this->MVCish = $MVCish;
 	}
-	function __destruct() {
-		unset($this->MVCish);
-	}
+	function __destruct() { unset($this->MVCish); }
+	private function MVCish(): \AuntieWarhol\MVCish\MVCish { return $this->MVCish; }
 
 	// set/get data (besides controller Response) to be used by templates,
 	// eg nav/menu options, page titles, js & css links, etc
@@ -81,32 +79,35 @@ class Render {
 	}
 
 	// alias MVCish methods templates will commonly need
+	final public function Environment() {
+		return $this->MVCish()->Environment();
+	}
 	final public function Config($k) {
-		return $this->MVCish->Config($k);
+		return $this->MVCish()->Config($k);
 	}
 	final public function Options() {
-		return $this->MVCish->options;
+		return $this->MVCish()->options;
 	}
 	final public function Response() {
-		return $this->MVCish->Response;
+		return $this->MVCish()->Response;
 	}
 	final public function Auth() {
-		return $this->MVCish->Auth();
+		return $this->MVCish()->Auth();
 	}
 	final public function Model($m) {
-		return $this->MVCish->Model($m);
+		return $this->MVCish()->Model($m);
 	}
 	final public function cleanOutput($str,$opt=[]) {
-		return $this->MVCish->cleanOutput($str,$opt);
+		return $this->MVCish()->cleanOutput($str,$opt);
 	}
 	final public function uri() {
-		return $this->MVCish->uri();
+		return $this->MVCish()->uri();
 	}
 	final public function uriFor($uri=null,$params=[]) {
-		return $this->MVCish->uri()->uriFor($uri,$params);
+		return $this->MVCish()->uri()->uriFor($uri,$params);
 	}
 	final public function assetUriFor($uri,$params=[],$opts=[]) {
-		return $this->MVCish->uri()->assetUriFor($uri,$params,$opts);
+		return $this->MVCish()->uri()->assetUriFor($uri,$params,$opts);
 	}
 
 
@@ -116,9 +117,10 @@ class Render {
 	final public function renderTemplate($fullPathTemplateFile=null,$output=true) {
 		$html = '';
 		$templateFile = null;
+		$MVCish = $this->MVCish();
 		if (isset($fullPathTemplateFile) ||
-			(isset($this->MVCish->options['template']) && ($templateFile =
-				$this->MVCish->options['template'])) ||
+			(isset($MVCish->options['template']) && ($templateFile =
+				$MVCish->options['template'])) ||
 			($fullPathTemplateFile = $this->getDefaultTemplateName($this->getControllerTemplateDirectory()))
 		) {
 			if (!isset($fullPathTemplateFile)) 
@@ -148,7 +150,7 @@ class Render {
 				$html = $this->renderFile($fullPathMasterTemplateFile);
 			}
 		}
-		elseif ($noTemplate = $this->MVCish->Config('noTemplateException')) {
+		elseif ($noTemplate = $MVCish->Config('noTemplateException')) {
 			if (is_string($noTemplate) && class_exists($noTemplate)) {
 				throw new $noTemplate();
 			}
@@ -160,10 +162,9 @@ class Render {
 
 		// Output
 		if ($output) {
-			if ($this->MVCish->ENV != 'PROD') {
-				// tidy up the html so view-source is comprehensible
-				$clean = \AuntieWarhol\MVCish\Util\HtmLawed::call('hl_tidy',[$html, 't', 'span']);
-				if (empty($clean)) $clean = '';
+			if ($MVCish->Environment()->prettyPrintHTML()) {
+				$clean = \AuntieWarhol\MVCish\Util\HtmLawed::call(
+					'hl_tidy',[$html, 't', 'span']) ?= '';
 				echo substr($clean, strpos($clean, "\n")+1);
 			}
 			else {
@@ -176,6 +177,7 @@ class Render {
 	}
 
 	final public function getValidFullPathToFile($templateFile,$templateDirectory=null) {
+		$MVCish = $this->MVCish();
 
 		// if begins with /, consider it absolute from document root
 		if (substr($templateFile,0,1) == DIRECTORY_SEPARATOR) {
@@ -187,7 +189,7 @@ class Render {
 			// remove any ending slash
 			$templateDirectory = rtrim($templateDirectory,DIRECTORY_SEPARATOR);
 			if (!is_dir($templateDirectory)) {
-				$this->MVCish->log('MVCish')->error("Can't find templateDirectory: $templateDirectory");
+				$MVCish->log('MVCish')->error("Can't find templateDirectory: $templateDirectory");
 				throw new \AuntieWarhol\MVCish\Exception\ServerError('Template Directory Not A Directory');
 			}
 		}
@@ -198,8 +200,8 @@ class Render {
 		$fullPathTemplateFile = $templateDirectory.DIRECTORY_SEPARATOR.$templateFile;
 
 		if (!is_file($fullPathTemplateFile)) {
-			$this->MVCish->log('MVCish')->error("Can't find templateFile: $fullPathTemplateFile");
-			if (($noTemplate = $this->MVCish->Config('noTemplateException')) &&
+			$MVCish->log('MVCish')->error("Can't find templateFile: $fullPathTemplateFile");
+			if (($noTemplate = $MVCish->Config('noTemplateException')) &&
 				(is_string($noTemplate) && class_exists($noTemplate))) {
 					throw new $noTemplate();
 			}
@@ -225,7 +227,7 @@ class Render {
 	}
 
 	final public function getRootTemplateDirectory() {
-		return $this->MVCish->getTemplateDirectory();
+		return $this->MVCish()->getTemplateDirectory();
 	}
 
 	// ***************************************************************************
@@ -265,12 +267,13 @@ class Render {
 	// if the script is at /admin/users.php, the default template will be
 	// $controllerTemplateDirectory/admin/users.php
 	public function getDefaultTemplateName($inDirectory) {
+		$MVCish = $this->MVCish();
 		$inDirectory = rtrim($inDirectory,DIRECTORY_SEPARATOR);
 
 		// if a controllerName was found/set, we should match it
-		if (isset($this->MVCish->controllerName) && 
-			file_exists($inDirectory.$this->MVCish->controllerName)
-		) return $inDirectory.$this->MVCish->controllerName;
+		if (isset($MVCish->controllerName) && 
+			file_exists($inDirectory.$MVCish->controllerName)
+		) return $inDirectory.$MVCish->controllerName;
 
 		// else parse uri
 		$urlPath = parse_url($_SERVER['REQUEST_URI'],PHP_URL_PATH);
@@ -279,7 +282,7 @@ class Render {
 		if (substr($fullfile,-1) == '/')    $fullfile .= 'index.php';
 		if (substr($fullfile,-4) != '.php') $fullfile .= '.php';
 		if (file_exists($fullfile)) return $fullfile;
-		//$this->MVCish->log()->debug("No default template for $fullfile");
+		//$MVCish->log()->debug("No default template for $fullfile");
 	}
 
 	// if the configured or default templateDirectory is MyApp/MVCish/templates,

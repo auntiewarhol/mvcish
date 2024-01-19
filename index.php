@@ -2,7 +2,14 @@
 
 require_once 'vendor/autoload.php';
 
-$MVCish = new \AuntieWarhol\MVCish\MVCish();
+$MVCish = new \AuntieWarhol\MVCish\MVCish([
+	'Environment' => isset($_SERVER['MVCISH']) ? $_SERVER['MVCISH'] : 'Local'
+]);
+
+if ($env = $MVCish->environment()) {
+	echo "ENV = ".$env->name()."\n";
+	echo "ENV Class = ".get_class($env)."\n";
+}
 
 if ((!empty($argv[1])) && (!empty($argv[2]))) {
 	$val = $argv[2];
