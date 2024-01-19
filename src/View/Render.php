@@ -9,7 +9,7 @@ class Render {
 		$this->MVCish = $MVCish;
 	}
 	function __destruct() { unset($this->MVCish); }
-	private function MVCish(): \AuntieWarhol\MVCish\MVCish { return $this->MVCish; }
+	public function MVCish(): \AuntieWarhol\MVCish\MVCish { return $this->MVCish; }
 
 	// set/get data (besides controller Response) to be used by templates,
 	// eg nav/menu options, page titles, js & css links, etc
