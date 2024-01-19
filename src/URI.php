@@ -24,7 +24,7 @@ class URI implements \JsonSerializable {
 	public function jsonSerialize():mixed { return $this->url(); }
 
 	public function toArray() {
-		return array_merge($this->getComponents(),[
+		return array_merge($this->getComponents(null,true),[
 			'authority' => $this->authority(),
 			'origin'    => $this->origin(),
 			'url'       => $this->url(),
@@ -55,7 +55,7 @@ class URI implements \JsonSerializable {
 		}
 	}
 
-	public function getComponents($setComponents=null):?array {
+	public function getComponents($setComponents=null,$wantArrayIfEmpty=false):?array {
 		if (empty($this->_components) && isset($this->url)) {
 			$this->_components = parse_url($this->_url);
 		}
@@ -66,7 +66,8 @@ class URI implements \JsonSerializable {
 			}
 		}
 		//error_log("components= ".print_r($this->_components,true));
-		return $this->_components;
+		return isset($this->_components) ? $this->_components :
+			($wantArrayIfEmpty ? [] : null);
 	}
 	public function getComponent($name,$new=null) {
 		if (
