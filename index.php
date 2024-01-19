@@ -6,9 +6,11 @@ $MVCish = new \AuntieWarhol\MVCish\MVCish([
 	'Environment' => isset($_SERVER['MVCISH']) ? $_SERVER['MVCISH'] : 'Local'
 ]);
 
-if ($env = $MVCish->environment()) {
+if ($env = $MVCish->Environment()) {
 	echo "ENV = ".$env->name()."\n";
 	echo "ENV Class = ".get_class($env)."\n";
+
+	echo "config= " . print_r($MVCish->Config(),true)."\n";
 }
 
 if ((!empty($argv[1])) && (!empty($argv[2]))) {

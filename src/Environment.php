@@ -2,12 +2,39 @@
 namespace AuntieWarhol\MVCish;
 use \Monolog\Formatter\LineFormatter;
 
-class Environment {
+class Environment extends \AuntieWarhol\MVCish\Base {
+
+	private string $name;
+
+	private string $defaultAppConfigFilename = 'appConfig.php';
+
+	private array $loggerLevel = [
+		'DEFAULT' => 'Warning', 'CLI' => 'Warning'
+	];
+	private array $lineFormatterParams = [
+		'stringFormat'       => null,
+		'dateFormat'         => null,
+		'allowInlineBreaks'  => false,
+		'ignoreEmptyContext' => false,
+		'includeStacktraces' => false,
+	];
+
+	// logLevel -- define default & for any error code you want special
+	//	set to false to indicate error should not be logged
+	private string $defaultLogLevel  = 'error';
+	private array  $errCodeLogLevels = [
+		'401' => 'debug', '301' => 'debug',
+		'NONE' => 'error' // same as default but formalized
+	];
+
+	private bool $prettyPrintHTML = false;
 
 
-	private $MVCish;
+	//***************************************************************
+	//***************************************************************
+
 	public function __construct(\AuntieWarhol\MVCish\MVCish $MVCish) {
-		$this->MVCish = $MVCish;
+		parent::__construct($MVCish);
 
 		// set messageBuilder functions for the Not Deliverable codes
 		$notDeliverable = function ($e,$basemsg):string {
@@ -24,15 +51,11 @@ class Environment {
 			}
 		);
 	}
-	function __destruct() { unset($this->MVCish); }
-	private function MVCish(): \AuntieWarhol\MVCish\MVCish { return $this->MVCish; }
 
-
-	public string $name = '';
 	public function __toString(): string  { return $this->name(); }
 
 	public function name():string {
-		if (empty($this->name)) {
+		if (!isset($this->name)) {
 			if ($reflect = new \ReflectionClass($this)) {
 				$this->name = $reflect->getShortName();
 			}
@@ -48,26 +71,60 @@ class Environment {
 	// not for configuration of MVCish.
 
 
-	public function getAppConfigDirectory() {
-		return $this->MVCish()->getAppDirectory().'config';
+	public function getDefaultAppConfigFilename() {
+		return $this->defaultAppConfigFilename;
 	}
 
-	// process the application config file and return it as an array
-	public string $defaultAppConfigFilename = 'appConfig.php';
-	public function getDefaultAppConfigFilename() { return $this->defaultAppConfigFilename; }
+	private string $appConfigFile;
+	public function appConfigFile() {
+
+		// option or default
+
+		// if you want to specify a full FilePath to appConfig in MVCish options, use
+		// ['appConfig' => $filepathname], and MVCish will handle it before calling
+		// the Environment. Whereas use 'appConfigFilename' to tell us the name of the
+		// file we should expect to find in the application config directory
+		// (which will have been separately optioned as 'appConfigDirectory' or defaulted),
+		// which may or may not also include $filename-$environmentName variant(s)
+
+		if (!isset($this->appConfigFile)) {
+
+			if (empty($this->MVCish->options['appConfigFilename'])) {
+				$acFilename = $this->getDefaultAppConfigFilename();
+			}
+			else {
+				$acFilename = $MVCish->options['appConfigFilename'];
+			}
+
+			if ((!$this->isRootClass()) &&
+				(($name = $this->name()) && !empty($name)) &&
+				($pi = pathinfo($acFilename))
+			) {
+				$acFilename = $pi['filename'] . '-'.$name . '.' . $pi['extension'];
+			}
+			$this->appConfigFile = $this->MVCish()->getAppConfigDirectory().$acFilename;
+		}
+		return $this->appConfigFile;
+	}
 
 
-	public function processAppConfigFile($acFilename,$ignoreMissing=false):mixed {
-		$appConfigFilePath = $MVCish->getAppConfigDirectory().$acFilename;
+	public function processAppConfigFile():array {
 
-		// return empty array if told to ignore missing file, 
-		// else return false to indicate that file was missing.
+		$appConfigFilePath = $this->appConfigFile();
+		error_log("processAppConfigFile ".$appConfigFilePath);
+
+		// return empty array if we're looking for a defaulted file,
+		// throw error if looking for a file the client configured.
 		if (!file_exists($appConfigFilePath)) {
 			error_log("notfound appConfig File $appConfigFilePath");
-			return $ignoreMissing ? [] : false;
+			if ($this->isRootClass() && isset($MVCish->options['appConfigFilename'])) {
+				throw new \AuntieWarhol\MVCish\Exception\ServerError(
+					"Could not find appConfig file: ".$appConfigFilePath);
+			}
+			return [];
 		}
 
-		$result = null;
+		$result = [];
 		try {
 			error_log("processing appConfig File $appConfigFilePath");
 			$result = include($appConfigFilePath);
@@ -75,54 +132,25 @@ class Environment {
 		catch(\Throwable $e) {
 			throw new \AuntieWarhol\MVCish\Exception\ServerError(
 				"Failed to parse appConfig from file ".$appConfigFilePath
-				.': '.$e->getMessage();
-			);
-		}
-		return empty($result) ? [] : $result;
-	}
- 
-	public function getAppConfigRoot():array {
-		$MVCish = $this->MVCish();
-
-		// option or default
-		$usingDefault = false;
-
-		// if you want to specify a full FilePath to appConfig in MVCish options,
-		// use ['appConfig' => $filepathname], and MVCish will handle it before
-		// calling us. Whereas use 'appConfigFilename' to tell us the name of the
-		// file we should expect to find in the application config directory
-		// (which will have been separately optioned as 'appConfigDirectory' or defaulted),
-		// which may or may not also includee $filename-$environmentName variant 
-		// versions to be sucked in by Environment subclasses.
-
-		if (empty($MVCish->options['appConfigFilename'])) {
-			$acFilename = $this->getDefaultAppConfigFilename();
-		}
-		else {
-			$usingDefault = true;
-			$acFilename = $MVCish->options['appConfigFilename'];
-		}
-		$result = $this->processAppConfigFile($acFilename,$usingDefault);
-		if ($result === false) {
-			// option-configured file not found, throw error
-			// if using default, there just might not be one and that's ok.
-			throw new \AuntieWarhol\MVCish\Exception\ServerError(
-				"Could not find appConfig file: ".$appConfigFilePath
+				.': '.$e->getMessage());
 		}
 		return empty($result) ? [] : $result;
 	}
 
 	// recursively process appConfig files down to the current evironment
 	public function getAppConfig():array {
-		// If we are in a child class
-		if ((bool)class_parents($this)) {
-			return array_replace(parent::getAppConfig(),
-				$this->processAppConfigFile(
-					$this->getDefaultAppConfigFilename(),true
-				));
+
+error_log("getAppConfig for this::class= ".$this::class.'; parentObject= '.$this->parentObject());
+
+		// we are in this root class
+		if ($this->isRootClass()) {
+			return $this->processAppConfigFile();
 		}
-		else {
-			return $this->getAppConfigRoot();
+		// we are in a child class
+		else{
+			return array_replace(
+				$this->parentObject()->getAppConfig(),
+				$this->processAppConfigFile());
 		}
 	}
 
@@ -130,21 +158,10 @@ class Environment {
 	// ***************************************************************
 	// Logging *******************************************************
 
-	public array $loggerLevel = [
-		'DEFAULT' => 'Error', 'CLI' => 'Debug'
-	];
 	public function getLoggerLevel():string {
 		return $this->loggerLevel[($this->MVCish()->isCLI() &&
 			isset($this->loggerLevel['CLI'])) ? 'CLI' : 'DEFAULT'];
 	}
-
-	public array $lineFormatterParams = [
-		'stringFormat'       => null,
-		'dateFormat'         => null,
-		'allowInlineBreaks'  => false,
-		'ignoreEmptyContext' => false,
-		'includeStacktraces' => false,
-	];
 
 	public function getLineFormatter(): \Monolog\Formatter\LineFormatter {
 		// (?string $format = null, ?string $dateFormat = null, 
@@ -160,16 +177,11 @@ class Environment {
 	}
 
 	// use $nullcode as a stand-in for errCode in LogLevel and buildMessage functions
-	public string $nullcode = 'NONE';
+	private string $nullcode = 'NONE';
 	public function getNullCode():string { return $this->nullcode; }
 
 	// logLevel -- define default & for any error code you want special
 	//	set to false to indicate error should not be logged
-	public string $defaultLogLevel = 'error';
-	public array  $errCodeLogLevels = [
-		'401' => 'debug', '301' => 'debug',
-		self::$nullcode => 'error' // same as default but wanted to formalize
-	];
 	public function getErrCodeLogLevel($errCode):string {
 		$errCode ?? $this->getNullCode();
 		if (array_key_exists($this->errCodeLogLevels,$errCode))
@@ -177,7 +189,7 @@ class Environment {
 	}
 
 	private array $messageBuilders = [];
-	public messageBuider($errCode,$new=null):callable {
+	public function messageBuilder(string $errCode,callable $new=null):callable {
 		if (isset($new)) {
 			$this->messageBuilders[$errCode] = $new;
 		}
@@ -185,7 +197,7 @@ class Environment {
 			return $this->messageBuilders[$errCode];
 		}
 	}
-	public function buildDefaultExceptionMessage($e,$basemsg):string {
+	public function buildDefaultExceptionMessage(Throwable $e,string $basemsg):string {
 		$code = $e->getCode()    ?: '';
 		$msg  = $e->getMessage() ?: '';
 		return $basemsg.' '
@@ -193,7 +205,7 @@ class Environment {
 			.$msg .' ('.$e->getFile().': '.$e->getLine().')';
 	}
 
-	public function buildExceptionMessage($e,$basemsg):string {
+	public function buildExceptionMessage(Throwable $e,string $basemsg):string {
 		// if there's a dedicated builder for the errCode, use that
 		if (($code = $e->getCode()) && ($builder = $this->messageBuilder($code))) {
 			return $builder($e,$basemsg);
@@ -206,7 +218,7 @@ class Environment {
 	// "undeliverable" instead of "broken", eg 404s, etc.
 	// Not called directly, but we call from the builder functions
 	// defined above for those codes. Of course subclasses can override.
-	public function buildNotDeliverableMessage($e,$basemsg):string {
+	public function buildNotDeliverableMessage(Throwable $e,string $basemsg):string {
 		// ignore basemsg & getMessage
 		$code = $e->getCode()    ?: '';
 		return "$code: ".$_SERVER['REQUEST_URI']
@@ -228,8 +240,7 @@ class Environment {
 
 	// Render does the actual rendering, but we can flag whether or not
 	// to pretty-print the html so view-source is comprehensible
-	public string $prettyPrintHTML = false;
-	public function prettyPrintHTML($new=null) {
+	public function prettyPrintHTML(bool $new=null):bool {
 		if (isset($new)) $this->prettyPrintHTML = $new;
 		return $this->prettyPrintHTML;
 	}

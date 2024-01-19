@@ -4,18 +4,13 @@ use \AuntieWarhol\MVCish\Util\HtmLawed;
 
 class Stage extends \AuntieWarhol\MVCish\Environment\Production {
 
-	public string $name = "Stage";
-	public string $loggerLevel = [
+	private array $loggerLevel = [
 		'DEFAULT' => 'Debug', 'CLI' => 'Debug'
 	];
-	public string $defaultAppConfigFilename = 'appConfig-Stage.php';
-	public string $prettyPrintHTML = true;
+	private bool $prettyPrintHTML = true;
 
-
-	private $MVCish;
 	public function __construct(\AuntieWarhol\MVCish\MVCish $MVCish) {
-		$this->MVCish = $MVCish;
-
+		parent::__construct($MVCish);
 		// add TRACE to Exception messages without an errCode
 		$this->messageBuilder($this->getNullCode(),
 			function ($e,$basemsg):string {
@@ -23,6 +18,7 @@ class Stage extends \AuntieWarhol\MVCish\Environment\Production {
 					return $msg . '; TRACE: '.$MVCish->getCallerInfo();
 				}
 			}
+		);
 	}
 
 	// add '(-$Env)' to outgoing email subject lines

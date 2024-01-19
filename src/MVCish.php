@@ -89,14 +89,14 @@ class MVCish {
 	private $_environment;
 	public function Environment($new=null): \AuntieWarhol\MVCish\Environment {
 		if (!$this->_environment) {
+			$new ??= 'Production';
 			try {
 				$this->_environment =
-					\AuntieWarhol\MVCish\Environment\Factory::getEnvironment(
-						empty($new) ? 'Production' : $new);
+					\AuntieWarhol\MVCish\Environment\Factory::getEnvironment($this,$new);
 			}
 			catch(\Exception $e) {
 				throw new \AuntieWarhol\MVCish\Exception\ServerError(
-					'Unable to instantiate Environment "'.$which.'": '
+					'Unable to instantiate Environment "'.$new.'": '
 						. $e->getMessage());
 			}
 		}
@@ -104,7 +104,8 @@ class MVCish {
 	}
 
 	private $_appConfig = null;
-	private function initConfig() {
+	private function initAppConfig() {
+error_log("initAppConfig");
 
 		// if appConfig set in MVCish Options
 		if (isset($this->options['appConfig']) && 
@@ -162,9 +163,12 @@ class MVCish {
 		return (empty($result) ? [] : $result);
 	}
 
-	public function Config($key) {
+	public function Config($key=null) {
 		if (!isset($this->_appConfig)) {
-			$this->initConfig();
+			$this->initAppConfig();
+		}
+		if (!isset($key)) {
+			return $this->_appConfig;
 		}
 		if (array_key_exists($key,$this->_appConfig)) {
 			return $this->_appConfig[$key];
