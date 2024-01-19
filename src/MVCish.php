@@ -105,7 +105,7 @@ class MVCish {
 
 	private $_appConfig = null;
 	private function initAppConfig() {
-error_log("initAppConfig");
+		//error_log("initAppConfig");
 
 		// if appConfig set in MVCish Options
 		if (isset($this->options['appConfig']) && 

@@ -111,12 +111,12 @@ class Environment extends \AuntieWarhol\MVCish\Base {
 	public function processAppConfigFile():array {
 
 		$appConfigFilePath = $this->appConfigFile();
-		error_log("processAppConfigFile ".$appConfigFilePath);
+		//error_log("processAppConfigFile ".$appConfigFilePath);
 
 		// return empty array if we're looking for a defaulted file,
 		// throw error if looking for a file the client configured.
 		if (!file_exists($appConfigFilePath)) {
-			error_log("notfound appConfig File $appConfigFilePath");
+			//error_log("notfound appConfig File $appConfigFilePath");
 			if ($this->isRootClass() && isset($MVCish->options['appConfigFilename'])) {
 				throw new \AuntieWarhol\MVCish\Exception\ServerError(
 					"Could not find appConfig file: ".$appConfigFilePath);
@@ -139,8 +139,6 @@ class Environment extends \AuntieWarhol\MVCish\Base {
 
 	// recursively process appConfig files down to the current evironment
 	public function getAppConfig():array {
-
-error_log("getAppConfig for this::class= ".$this::class.'; parentObject= '.$this->parentObject());
 
 		// we are in this root class
 		if ($this->isRootClass()) {
