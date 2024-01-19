@@ -145,7 +145,7 @@ class MVCish {
 				// appConfig has just been passed in as an array
 				$this->_appConfig = $appConfig;
 			}
-			elseif(is_string($appConfig)) {
+			else if (is_string($appConfig)) {
 				// we have been given an config filename
 				if (file_exists($appConfig)) {
 					try {
@@ -154,8 +154,7 @@ class MVCish {
 					catch(\Throwable $e) {
 						throw new \AuntieWarhol\MVCish\Exception\ServerError(
 							"Failed to parse appConfig from file ".$appConfig
-							.': '.$e->getMessage();
-						);
+							.': '.$e->getMessage());
 					}
 				}
 			}
@@ -625,7 +624,9 @@ class MVCish {
 
 	// UTILS / MISC ***********************
 
-	public static function isCLI { return php_sapi_name() == "cli"; }
+	public static function isCLI() {
+		return php_sapi_name() == "cli";
+	}
 
 	public static function getCallerInfo() {
 		$c = '';
@@ -714,7 +715,7 @@ class MVCish {
 			}
 
 			$logger  = new Logger($channel);
-			$loggerLevel = $this->Environment()->getLoggerLevel() ?= 'Debug';
+			$loggerLevel = $this->Environment()->getLoggerLevel() ?? 'Debug';
 			$logEnv  = Level::$LoggerLevel;
 
 			$handler = new StreamHandler($this->_logfile,$logEnv);

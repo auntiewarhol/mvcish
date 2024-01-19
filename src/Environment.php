@@ -151,11 +151,11 @@ class Environment {
 		// 	bool $allowInlineLineBreaks = false, bool $ignoreEmptyContextAndExtra = false, 
 		//	bool $includeStacktraces = false)
 		return new LineFormatter(
-			$this->lineFormatterParams['stringFormat']       ?= null,
-			$this->lineFormatterParams['dateFormat']         ?= null,
-			$this->lineFormatterParams['allowInlineBreaks']  ?= false,
-			$this->lineFormatterParams['ignoreEmptyContext'] ?= false,
-			$this->lineFormatterParams['includeStacktraces'] ?= false
+			$this->lineFormatterParams['stringFormat']       ?? null,
+			$this->lineFormatterParams['dateFormat']         ?? null,
+			$this->lineFormatterParams['allowInlineBreaks']  ?? false,
+			$this->lineFormatterParams['ignoreEmptyContext'] ?? false,
+			$this->lineFormatterParams['includeStacktraces'] ?? false
 		);
 	}
 
@@ -171,7 +171,7 @@ class Environment {
 		self::$nullcode => 'error' // same as default but wanted to formalize
 	];
 	public function getErrCodeLogLevel($errCode):string {
-		$errCode ?= $this->getNullCode();
+		$errCode ?? $this->getNullCode();
 		if (array_key_exists($this->errCodeLogLevels,$errCode))
 			return $this->errCodeLogLevels[$errCode];
 	}

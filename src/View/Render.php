@@ -164,7 +164,7 @@ class Render {
 		if ($output) {
 			if ($MVCish->Environment()->prettyPrintHTML()) {
 				$clean = \AuntieWarhol\MVCish\Util\HtmLawed::call(
-					'hl_tidy',[$html, 't', 'span']) ?= '';
+					'hl_tidy',[$html, 't', 'span']) ?? '';
 				echo substr($clean, strpos($clean, "\n")+1);
 			}
 			else {
