@@ -7,9 +7,9 @@ class URI implements \JsonSerializable {
 	private string $_url;
 	private array  $_components;
 
-	public function __construct($url,$params=null,$replace=false) {
+	public function __construct(string|self $url,$params=null,$replace=false) {
 		$this->_changed = false;
-		$this->_url = isset($url) ? $url : '';
+		$this->_url = is_string($url) ? $url : $url->__toString();
 		if (isset($params)) {
 			$replace ? $this->queryParams($params) : $this->addToQuery($params);
 		}
@@ -55,8 +55,8 @@ class URI implements \JsonSerializable {
 		}
 	}
 
-	public function getComponents($setComponents=null) {
-		if (empty($this->_components)) {
+	public function getComponents($setComponents=null):?array {
+		if (empty($this->_components) && isset($this->url)) {
 			$this->_components = parse_url($this->_url);
 		}
 		if (is_array($setComponents)) {
