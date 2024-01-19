@@ -3,7 +3,8 @@
 require_once 'vendor/autoload.php';
 
 $MVCish = new \AuntieWarhol\MVCish\MVCish([
-	'Environment' => isset($_SERVER['MVCISH']) ? $_SERVER['MVCISH'] : 'Local'
+	'Environment' => isset($_SERVER['MVCISH']) ? $_SERVER['MVCISH'] : 'Local',
+	'appConfig' => ['foo' => 'bar']
 ]);
 
 if ($env = $MVCish->Environment()) {
@@ -12,6 +13,7 @@ if ($env = $MVCish->Environment()) {
 
 	echo "config= " . print_r($MVCish->Config(),true)."\n";
 }
+$MVCish->log('TEST')->debug("debug message yo");
 
 if ((!empty($argv[1])) && (!empty($argv[2]))) {
 	$val = $argv[2];

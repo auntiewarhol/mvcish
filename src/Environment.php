@@ -157,8 +157,9 @@ class Environment extends \AuntieWarhol\MVCish\Base {
 	// Logging *******************************************************
 
 	public function getLoggerLevel():string {
-		return $this->loggerLevel[($this->MVCish()->isCLI() &&
-			isset($this->loggerLevel['CLI'])) ? 'CLI' : 'DEFAULT'];
+		return $this->loggerLevel[
+			($this->MVCish()->isCLI() && isset($this->loggerLevel['CLI'])) ? 'CLI' :
+			'DEFAULT'] ?? 'Debug';
 	}
 
 	public function getLineFormatter(): \Monolog\Formatter\LineFormatter {

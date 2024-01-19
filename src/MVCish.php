@@ -1,7 +1,6 @@
 <?php
 namespace AuntieWarhol\MVCish;
 
-use \Monolog\Level;
 use \Monolog\Logger;
 use \Monolog\Handler\StreamHandler;
 use \PHPMailer\PHPMailer\PHPMailer;
@@ -111,7 +110,6 @@ class MVCish {
 		if (isset($this->options['appConfig']) && 
 			($appConfig = $this->options['appConfig'])
 		) {
-
 			if (isset($this->options['appConfigPriority']) &&
 				($this->options['appConfigPriority'] == 'OPTION')
 			) {
@@ -134,6 +132,7 @@ class MVCish {
 			$this->_appConfig = $this->Environment()->getAppConfig();
 		}
 		//$this->log('MVCish')->debug("MVCish appConfig",$this->_appConfig);
+		//error_log("MVCish appConfig= ".print_r($this->_appConfig,true));
 	}
 
 	private function _getOptionAppConfig():array {
@@ -144,7 +143,7 @@ class MVCish {
 		) {
 			if (is_array($appConfig)) {
 				// appConfig has just been passed in as an array
-				$this->_appConfig = $appConfig;
+				return $appConfig;
 			}
 			else if (is_string($appConfig)) {
 				// we have been given an config filename
@@ -718,11 +717,10 @@ class MVCish {
 				$this->_logfile = $logfile;
 			}
 
-			$logger  = new Logger($channel);
-			$loggerLevel = $this->Environment()->getLoggerLevel() ?? 'Debug';
-			$logEnv  = Level::$LoggerLevel;
-
-			$handler = new StreamHandler($this->_logfile,$logEnv);
+			$logger      = new Logger($channel);
+			$handler = new StreamHandler($this->_logfile,
+				constant('Monolog\Logger::'.strtoupper($this->Environment()->getLoggerLevel()))
+			);
 			if ($formatter = $this->Environment()->getLineFormatter()) {
 				$handler->setFormatter($formatter);
 			}
