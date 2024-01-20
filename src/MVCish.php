@@ -70,9 +70,7 @@ class MVCish {
 				}
 			} catch (\Exception $e) {
 				$msg[] = "Additional error encountered writing to MVCish log: ".$e->getMessage();
-				foreach ($msg as $m) {
-					error_log($m);
-				}
+				foreach ($msg as $m) { error_log($m); }
 			}
 		}
 		if ($exception) {
@@ -176,6 +174,7 @@ class MVCish {
 	}
 
 
+	private $usingTempAppDir = false;
 	private $appDirectory = null;
 	public function getAppDirectory() {
 		if (!isset($this->appDirectory)) {
@@ -186,6 +185,7 @@ class MVCish {
 						E_USER_WARNING);
 				}
 				$this->appDirectory = sys_get_temp_dir().DIRECTORY_SEPARATOR;
+				$this->usingTempAppDir = true;
 			}
 			else {
 				$this->appDirectory =
@@ -201,80 +201,73 @@ class MVCish {
 		}
 		return $this->appDirectory;
 	}
+	public function usingTempAppDir():bool {
+		return $this->usingTempAppDir;
+	}
+
+	private function _findOrCreateChildDirectory(string $parentDir, string $name,string $key,string $configKey=null):void {
+		// you can set these directly in options
+		// or we will create it in the appDirectory
+		
+		if (isset($this->options[$key])) {
+			$this->$key =
+				rtrim($this->options[$key],DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
+		}
+		else if (isset($configKey) && ($configVal = $this->Config($configKey))) {
+			$this->$key =
+				rtrim($configVal,DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
+		}
+		else {
+			$this->$key = $parentDir.$name.DIRECTORY_SEPARATOR;
+		}
+
+		if (!file_exists($this->$key)) {
+			if (!mkdir($this->$key,0755,true)) {
+				throw new \AuntieWarhol\MVCish\Exception\ServerError(
+					"Failed to find or create $name directory: ".$this->$key);
+			}
+		}
+	}
 
 	// option or default
 	private $runtimeDirectory = null;
-	public function getRuntimeDirectory() {
+	public function getRuntimeDirectory():?string {
 		if (!isset($this->runtimeDirectory)) {
-			// you can set this directly in options
-			// or we will create it in the appDirectory
-			if (empty($this->options['runtimeDirectory'])) {
-				$this->runtimeDirectory = $this->getAppDirectory()."runtime".DIRECTORY_SEPARATOR;
-
-			}
-			else {
-				$this->runtimeDirectory =
-					rtrim($this->options['runtimeDirectory'],DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
-			}
-
-			if (!file_exists($this->runtimeDirectory)) {
-				if (!mkdir($this->runtimeDirectory,0755,true)) {
-					throw new \AuntieWarhol\MVCish\Exception\ServerError(
-						"Failed to find or create runtime directory: ".$this->runtimeDirectory);
-				}
-			}
+			$this->_findOrCreateChildDirectory(
+				$this->getAppDirectory(),'runtime','runtimeDirectory');
 		}
 		return $this->runtimeDirectory;
 	}
 
 	// option or default
 	private $appConfigDirectory = null;
-	public function getAppConfigDirectory() {
+	public function getAppConfigDirectory():?string {
 		if (!isset($this->appConfigDirectory)) {
-			// you can set this directly in options
-			// or we will create it in the appDirectory
-			if (empty($this->options['appConfigDirectory'])) {
-				$this->appConfigDirectory = $this->getAppDirectory()."config".DIRECTORY_SEPARATOR;
-
-			}
-			else {
-				$this->appConfigDirectory =
-					rtrim($this->options['appConfigDirectory'],DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
-			}
-
-			if (!file_exists($this->appConfigDirectory)) {
-				if (!mkdir($this->appConfigDirectory,0755,true)) {
-					throw new \AuntieWarhol\MVCish\Exception\ServerError(
-						"Failed to find or create appConfig directory: ".$this->appConfigDirectory);
-				}
-			}
+			$this->_findOrCreateChildDirectory(
+				$this->getAppDirectory(),'config','appConfigDirectory');
 		}
 		return $this->runtimeDirectory;
 	}
 
-	// option or appConfig or default
-	private $rootTemplateDirectory = null;
-	public function getTemplateDirectory($reset = false) {
-		if ($reset || !isset($this->rootTemplateDirectory)) {
-
-			// set the default template directory if not optioned or configed
-			if (isset($this->options['templateDirectory'])) {
-				$this->rootTemplateDirectory = $this->options['templateDirectory'];
-			}
-			elseif ($td = $this->Config('TEMPLATE_DIRECTORY')) {
-				$this->rootTemplateDirectory = $td;
-			}
-			else {
-				$defaultTD = $this->getAppDirectory().'templates';
-				if (is_dir($defaultTD)) {
-					$this->rootTemplateDirectory = $defaultTD;
-				}
-			}
-			// ensure single trailing slash
-			$this->rootTemplateDirectory =
-				rtrim($this->rootTemplateDirectory,DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
+	// option or default
+	private $logDirectory = null;
+	public function getLogDirectory():?string {
+		if (!isset($this->logDirectory)) {
+			$this->_findOrCreateChildDirectory(
+				$this->getRuntimeDirectory(),'logs','logDirectory');
 		}
-		return $this->rootTemplateDirectory;
+		return $this->logDirectory;
+	}
+
+
+	// option or appConfig or default
+	private $templateDirectory = null;
+	public function getTemplateDirectory($reset = false):?string {
+		if ($reset || !isset($this->templateDirectory)) {
+			$this->_findOrCreateChildDirectory(
+				$this->getAppDirectory(),'templates','templateDirectory','TEMPLATE_DIRECTORY');
+		}
+		return $this->templateDirectory;
 	}
 
 
@@ -374,12 +367,10 @@ class MVCish {
 	}
 
 	private function logExceptionMessage($e,$basemsg) {
-
 		$environment = $this->Environment();
 		if ($logLevel = $environment->getErrCodeLogLevel($errCode)) {
-			$this->log('MVCish')->$logLevel(
-				$environment->buildExceptionMessage($e,$basemsg)
-			);
+			$msg = $environment->buildExceptionMessage($e,$basemsg);
+			$this->log('MVCish')->$logLevel($msg);
 		}
 	}
 
@@ -627,6 +618,10 @@ class MVCish {
 
 	// UTILS / MISC ***********************
 
+	public static function throwWarning($message) {
+		trigger_error($message, E_USER_WARNING);
+	}
+
 	public static function isCLI() {
 		return php_sapi_name() == "cli";
 	}
@@ -698,23 +693,22 @@ class MVCish {
 		if (!array_key_exists($channel,$this->_logs)) {
 
 			if (!$this->_logfile) {
-				$logConfig = $this->Config('LOGFILE');
+				if ($this->usingTempAppDir()) {
+					$this->_logfile = 'php://stdout';
+				}
+				else {
 
-				$logfile = (isset($logConfig) && isset($logConfig['LOGFILE'])) ?
-					$logConfig['LOGFILE'] :
-					$this->getRuntimeDirectory().'logs'.DIRECTORY_SEPARATOR.$name.'.log';
+					$logConfig = $this->Config('LOGFILE');
+					$logfile = $this->getLogDirectory()
+						.(isset($logConfig) ? $logConfig : $name.'.log');
 
-				$logdir = pathinfo($logfile,PATHINFO_DIRNAME);
-				if (!file_exists($logdir)) {
-					if (!mkdir($logdir,0755,true)) {
-						throw new \AuntieWarhol\MVCish\Exception\ServerError("Failed to find or create logdir");
+					if (!file_exists($logfile)) {
+						if (!touch($logfile))
+							throw new \AuntieWarhol\MVCish\Exception\ServerError("Failed to create logfile");
 					}
+					$this->_logfile = $logfile;
 				}
-				if (!file_exists($logfile)) {
-					if (!touch($logfile))
-						throw new \AuntieWarhol\MVCish\Exception\ServerError("Failed to create logfile");
-				}
-				$this->_logfile = $logfile;
+				//error_log("Writing log to ".$this->_logfile);
 			}
 
 			$logger      = new Logger($channel);

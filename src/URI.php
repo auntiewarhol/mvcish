@@ -61,9 +61,8 @@ class URI implements \JsonSerializable {
 				$this->_components = $parsed;
 			}
 			else {
-				//error_log("failed to parse url '".$this->_url."'");
-				throw new \AuntieWarhol\MVCish\Exception\ServerError(
-					"failed to parse url: ".$this->_url);
+				\AuntieWarhol\MVCish\MVCish::throwWarning(
+					static::class." Failed to parse url: ".$this->_url);
 			}
 		}
 		if (is_array($setComponents)) {
