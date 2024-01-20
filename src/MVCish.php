@@ -46,7 +46,16 @@ class MVCish {
 		$er = error_reporting();
 		if ($er == 0 || $er == 4437) return true; //4437=php8 hack
 
-		$msg = [$this->translatePHPerrCode($errno).": $errstr; line $errline:$errfile"];
+		$errConst = $this->translatePHPerrCode($errno);
+		//hacky, but...
+		if (($errno == E_USER_WARNING) && ($errfile == __FILE__) &&
+			(substr($errstr,0,18) == 'E_MVCISH_WARNING: ')) {
+			$errConst = 'E_MVCISH_WARNING';
+			$errstr = substr($errstr,18);
+		}
+
+		$msg = [$errConst.": $errstr"
+			.(($errConst != 'E_MVCISH_WARNING') ? "; line $errline:$errfile" : '')];
 
 		$exception = null;
 		$msgMethod = null;
@@ -180,9 +189,9 @@ class MVCish {
 		if (!isset($this->appDirectory)) {
 			if (empty($this->options['appDirectory'])) {
 				if (!$this->isCLI()) {
-					trigger_error(
-						"Using MVCish without setting an application directory is discouraged; using tmpfiles.",
-						E_USER_WARNING);
+					$this->throwWarning(
+						"Using MVCish without setting an application directory is discouraged; using tmpfiles."
+					);
 				}
 				$this->appDirectory = sys_get_temp_dir().DIRECTORY_SEPARATOR;
 				$this->usingTempAppDir = true;
@@ -619,7 +628,7 @@ class MVCish {
 	// UTILS / MISC ***********************
 
 	public static function throwWarning($message) {
-		trigger_error($message, E_USER_WARNING);
+		trigger_error('E_MVCISH_WARNING: '.$message, E_USER_WARNING);
 	}
 
 	public static function isCLI() {
