@@ -181,10 +181,10 @@ class Environment extends \AuntieWarhol\MVCish\Base {
 
 	// logLevel -- define default & for any error code you want special
 	//	set to false to indicate error should not be logged
-	public function getErrCodeLogLevel($errCode):string {
+	public function getErrCodeLogLevel($errCode):?string {
 		$errCode ?? $this->getNullCode();
-		if (array_key_exists($errCode,$this->errCodeLogLevels))
-			return $this->errCodeLogLevels[$errCode];
+		return (array_key_exists($errCode,$this->errCodeLogLevels)) ?
+			$this->errCodeLogLevels[$errCode] : null;
 	}
 
 	private array $messageBuilders = [];
