@@ -24,7 +24,7 @@ class URI implements \JsonSerializable {
 	public function jsonSerialize():mixed { return $this->url(); }
 
 	public function toArray() {
-		return array_merge($this->getComponents(null,true),[
+		return array_merge($this->components() ?? [],[
 			'authority' => $this->authority(),
 			'origin'    => $this->origin(),
 			'url'       => $this->url(),
@@ -35,7 +35,7 @@ class URI implements \JsonSerializable {
 	}
 
 	private function _buildUrl() {
-		if ($components = $this->getComponents()) {
+		if ($components = $this->components()) {
 
 			if ($this->isAbsolute()) {
 				$origin = $this->origin();
@@ -55,8 +55,8 @@ class URI implements \JsonSerializable {
 		}
 	}
 
-	public function getComponents($setComponents=null,$wantArrayIfEmpty=false):?array {
-		if (empty($this->_components) && isset($this->url)) {
+	public function components($setComponents=null):?array {
+		if (empty($this->_components) && isset($this->_url)) {
 			$this->_components = parse_url($this->_url);
 		}
 		if (is_array($setComponents)) {
@@ -66,12 +66,11 @@ class URI implements \JsonSerializable {
 			}
 		}
 		//error_log("components= ".print_r($this->_components,true));
-		return isset($this->_components) ? $this->_components :
-			($wantArrayIfEmpty ? [] : null);
+		return isset($this->_components) ? $this->_components : null;
 	}
-	public function getComponent($name,$new=null) {
+	public function component($name,$new=null) {
 		if (
-			($components = $this->getComponents(isset($new) ? [$name => $new] : null))
+			($components = $this->components(isset($new) ? [$name => $new] : null))
 			&& array_key_exists($name,$components)
 		) {
 			return $components[$name];
@@ -80,15 +79,15 @@ class URI implements \JsonSerializable {
 
 
 	// Scheme
-	public function scheme($new=null)   { return $this->getComponent('scheme',$new);   }
+	public function scheme($new=null)   { return $this->component('scheme',$new);   }
 
 	// Authority
-	public function host($new=null)     { return $this->getComponent('host',$new);     }
-	public function port($new=null)     { return $this->getComponent('port',$new);     }
-	public function user($new=null)     { return $this->getComponent('user',$new);     }
-	public function pass($new=null)     { return $this->getComponent('pass',$new);     }
+	public function host($new=null)     { return $this->component('host',$new);     }
+	public function port($new=null)     { return $this->component('port',$new);     }
+	public function user($new=null)     { return $this->component('user',$new);     }
+	public function pass($new=null)     { return $this->component('pass',$new);     }
 	public function authority() {
-		if ($components = $this->getComponents()) {
+		if ($components = $this->components()) {
 			if ($this->isAbsolute()) {
 				$pass      = $components['pass'] ?? null;
 				$user      = $components['user'] ?? null;
@@ -107,7 +106,7 @@ class URI implements \JsonSerializable {
 
 	// Origin
 	public function origin() {
-		if ($components = $this->getComponents()) {
+		if ($components = $this->components()) {
 			if ($this->isAbsolute()) {
 				$scheme    = $components['scheme'] ?? "";
 				$authority = $this->authority();
@@ -120,14 +119,14 @@ class URI implements \JsonSerializable {
 
 
 	// Path
-	public function path()     { return $this->getComponent('path');     }
+	public function path()     { return $this->component('path');     }
 	public function systemPath() {
 		$path = $this->path();
-		if (!empty($_SERVER['DOCUMENT_ROOT'])) {
-			$filepath = $_SERVER['DOCUMENT_ROOT'].DIRECTORY_SEPARATOR
-				.(isset($path) ? ltrim($path,DIRECTORY_SEPARATOR) : '').DIRECTORY_SEPARATOR;
-			if (file_exists($filepath)) return $filepath;
-		}
+		$filepath =
+			(empty($_SERVER['DOCUMENT_ROOT']) ? getcwd() : $_SERVER['DOCUMENT_ROOT'])
+			.DIRECTORY_SEPARATOR
+			.(isset($path) ? ltrim($path,DIRECTORY_SEPARATOR) : '');
+		if (file_exists($filepath)) return $filepath;
 	}
 
 	public function isRelative() { return $this->host() ? false : true;  }
@@ -140,17 +139,17 @@ class URI implements \JsonSerializable {
 	public function query($new=null,$newParams=null) {
 		if (isset($new)) {
 			$this->_qryParams = null;
-			$this->getComponent('query',$new);
+			$this->component('query',$new);
 		}
 		else {
 			if (isset($newParams)) {
 				$this->_qryParams = $newParams;
 			}
 			if (isset($this->_qryParams)) {
-				$this->getComponent('query',http_build_query($this->_qryParams));
+				$this->component('query',http_build_query($this->_qryParams));
 			}
 		}
-		return $this->getComponent('query');
+		return $this->component('query');
 	}
 	public function queryParams($new=null) {
 		if (isset($new)) {
@@ -178,5 +177,5 @@ class URI implements \JsonSerializable {
 
 
 	// Fragment
-	public function fragment($new=null) { return $this->getComponent('fragment',$new); }
+	public function fragment($new=null) { return $this->component('fragment',$new); }
 }
