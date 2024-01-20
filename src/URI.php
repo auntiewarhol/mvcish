@@ -57,7 +57,14 @@ class URI implements \JsonSerializable {
 
 	public function components($setComponents=null):?array {
 		if (empty($this->_components) && isset($this->_url)) {
-			$this->_components = parse_url($this->_url);
+			if ($parsed = parse_url($this->_url)) {
+				$this->_components = $parsed;
+			}
+			else {
+				//error_log("failed to parse url '".$this->_url."'");
+				throw new \AuntieWarhol\MVCish\Exception\ServerError(
+					"failed to parse url: ".$this->_url);
+			}
 		}
 		if (is_array($setComponents)) {
 			foreach($setComponents as $k => $v) {

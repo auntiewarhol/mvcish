@@ -183,7 +183,7 @@ class Environment extends \AuntieWarhol\MVCish\Base {
 	//	set to false to indicate error should not be logged
 	public function getErrCodeLogLevel($errCode):string {
 		$errCode ?? $this->getNullCode();
-		if (array_key_exists($this->errCodeLogLevels,$errCode))
+		if (array_key_exists($errCode,$this->errCodeLogLevels))
 			return $this->errCodeLogLevels[$errCode];
 	}
 
