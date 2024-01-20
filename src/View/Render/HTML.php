@@ -96,7 +96,7 @@ class HTML {
 				}
 				else {
 					//remove dupes from string ($v or imploded $v)
-					$v = implode(" ",array_unique(explode(" ",$v)));
+					$v = implode(" ",array_unique(explode(" ",$v ?? '')));
 					$pairs[] = $k.'="'.htmlspecialchars($v,ENT_QUOTES).'"';
 				}
 			}
