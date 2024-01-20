@@ -368,7 +368,7 @@ class MVCish {
 
 	private function logExceptionMessage($e,$basemsg) {
 		$environment = $this->Environment();
-		if ($logLevel = $environment->getErrCodeLogLevel($errCode)) {
+		if ($logLevel = $environment->getErrCodeLogLevel($e->getCode())) {
 			$msg = $environment->buildExceptionMessage($e,$basemsg);
 			$this->log('MVCish')->$logLevel($msg);
 		}
