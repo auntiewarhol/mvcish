@@ -126,7 +126,7 @@ class Environment extends \AuntieWarhol\MVCish\Base {
 
 		$result = [];
 		try {
-			error_log("processing appConfig File $appConfigFilePath");
+			//error_log("processing appConfig File $appConfigFilePath");
 			$result = include($appConfigFilePath);
 		}
 		catch(\Throwable $e) {
