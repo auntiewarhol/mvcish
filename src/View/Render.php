@@ -2,14 +2,7 @@
 namespace AuntieWarhol\MVCish\View;
 
 
-class Render {
-
-	private $MVCish;
-	public function __construct(\AuntieWarhol\MVCish\MVCish $MVCish) {
-		$this->MVCish = $MVCish;
-	}
-	function __destruct() { unset($this->MVCish); }
-	public function MVCish(): \AuntieWarhol\MVCish\MVCish { return $this->MVCish; }
+class Render extends \AuntieWarhol\MVCish\Base {
 
 	// set/get data (besides controller Response) to be used by templates,
 	// eg nav/menu options, page titles, js & css links, etc
@@ -82,14 +75,14 @@ class Render {
 	final public function Environment() {
 		return $this->MVCish()->Environment();
 	}
-	final public function Config($k) {
+	final public function Config($k=null) {
 		return $this->MVCish()->Config($k);
 	}
-	final public function Options() {
-		return $this->MVCish()->options;
+	final public function Options($k=null) {
+		return $this->MVCish()->Options($k);
 	}
-	final public function Response() {
-		return $this->MVCish()->Response;
+	final public function Response($k=null) {
+		return $this->MVCish()->Response($k);
 	}
 	final public function Auth() {
 		return $this->MVCish()->Auth();
@@ -119,8 +112,7 @@ class Render {
 		$templateFile = null;
 		$MVCish = $this->MVCish();
 		if (isset($fullPathTemplateFile) ||
-			(isset($MVCish->options['template']) && ($templateFile =
-				$MVCish->options['template'])) ||
+			($templateFile = $MVCish->Options('template')) ||
 			($fullPathTemplateFile = $this->getDefaultTemplateName($this->getControllerTemplateDirectory()))
 		) {
 			if (!isset($fullPathTemplateFile)) 
@@ -238,9 +230,9 @@ class Render {
 	// a renderClass that prepares template data and/or provides a master template.
 	// App can have a subclass for each site section where these things might be
 	// different (home pages vs account pages vs admin pages, etc).
-	// The class is provided via MVCish->options, so if there's just one, it
+	// The class is provided via MVCish()->Options(), so if there's just one, it
 	// could be provided in app-config.php, or if there are multiple, then
-	// a controller can set the one it uses in Run options.
+	// a controller can set the one it uses in Run Options.
 	// The class may be defined like:
 	//
 	//	   namespace \MyApp\Render;
@@ -271,9 +263,9 @@ class Render {
 		$inDirectory = rtrim($inDirectory,DIRECTORY_SEPARATOR);
 
 		// if a controllerName was found/set, we should match it
-		if (isset($MVCish->controllerName) && 
-			file_exists($inDirectory.$MVCish->controllerName)
-		) return $inDirectory.$MVCish->controllerName;
+		if (($controllerName = $MVCish->controllerName()) && 
+			file_exists($inDirectory.$controllerName))
+				return $inDirectory.$controllerName;
 
 		// else parse uri
 		$urlPath = parse_url($_SERVER['REQUEST_URI'],PHP_URL_PATH);
@@ -282,7 +274,7 @@ class Render {
 		if (substr($fullfile,-1) == '/')    $fullfile .= 'index.php';
 		if (substr($fullfile,-4) != '.php') $fullfile .= '.php';
 		if (file_exists($fullfile)) return $fullfile;
-		//$MVCish->log()->debug("No default template for $fullfile");
+		//$MVCish()->log()->debug("No default template for $fullfile");
 	}
 
 	// if the configured or default templateDirectory is MyApp/MVCish/templates,

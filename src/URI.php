@@ -62,7 +62,7 @@ class URI implements \JsonSerializable {
 			}
 			else {
 				$file = $line = null;
-				foreach (\AuntieWarhol\MVCish\MVCish::getRelevantCallers() as $t) {
+				foreach (Debug::getFilteredTrace() as $t) {
 					if (isset($t['file']) && (
 						(isset($t['class']) && ($t['class'] == 'AuntieWarhol\MVCish\View\Render')) ||
 						(isset($t['function']) && in_array($t['function'],['uriFor','assetUriFor']))
@@ -71,7 +71,7 @@ class URI implements \JsonSerializable {
 						break;
 					}
 				}
-				\AuntieWarhol\MVCish\MVCish::throwWarning(
+				Exception\ServerWarning::throwWarning(
 					static::class." Failed to parse url '".$this->_url."'",$file,$line);
 			}
 		}

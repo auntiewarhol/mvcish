@@ -3,17 +3,7 @@ namespace AuntieWarhol\MVCish\Util;
 use Symfony\Polyfill\Intl\Idn;
 
 
-class Validator {
-
-
-	public $MVCish;
-	public function __construct(\AuntieWarhol\MVCish\MVCish $MVCish) {
-		$this->MVCish = $MVCish;
-	}
-	function __destruct() {
-		unset($this->MVCish);
-	}
-
+class Validator extends \AuntieWahol\MVCish\Base {
 
 	/* pass no args, get the validators hash;
 		pass one arg, get the validator of that name;
@@ -122,7 +112,7 @@ class Validator {
 
 					$parsedHost = parse_url($modvalue, PHP_URL_HOST);
 
-					$parser = $this->MVCish->domainParser();
+					$parser = $this->MVCish()->domainParser();
 					$result = $parser->resolvePublicSuffixList($parsedHost);
 					if ($result->suffix()->isICANN()) {
 

@@ -1,5 +1,7 @@
 <?php
 
+// dumb junk test script. will do this right some day. maybe.
+
 require_once 'vendor/autoload.php';
 
 $MVCish = new \AuntieWarhol\MVCish\MVCish([
@@ -62,7 +64,7 @@ if ((!empty($argv[1])) && (!empty($argv[2]))) {
 		echo "assetUriFor= ".$u."\n".print_r($u->toArray(),true)."\n";
 	}
 }
-$MVCish->throwWarning("just a test of the warning system");
+\AuntieWarhol\MVCish\Exception\ServerWarning::throwWarning("test the warning system");
 trigger_error("and a regular dumb error",E_USER_ERROR);
 echo "still here\n";
 

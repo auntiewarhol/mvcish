@@ -5,7 +5,7 @@ use Pdp\Domain;
 use Pdp\TopLevelDomains;
 use Symfony\Component\HttpClient\HttpClient;
 
-class DomainParser {
+class DomainParser extends \AuntieWarhol\MVCish\Base {
 
 	const pslTTLsec = 86400; //24hr
 
@@ -13,11 +13,10 @@ class DomainParser {
 	// wrapper around php-domain-parser, to handle the caching of the public list using
 	// the application's runtime directory, and to abstract away some formalities
 
-	public $MVCish;
 	public function __construct(\AuntieWarhol\MVCish\MVCish $MVCish) {
-		$this->MVCish = $MVCish;
+		parent::__construct($MVCish);
 
-		$cacheDir = $this->MVCish->getRuntimeDirectory().'.dpcache';
+		$cacheDir = $this->MVCish()->getRuntimeDirectory().'.dpcache';
 		if (!(is_dir($cacheDir) && is_writable($cacheDir))) {
 			if (!mkdir($cacheDir,0755)) {
 				throw new \AuntieWarhol\MVCish\Exception\ServerError(
@@ -38,9 +37,6 @@ class DomainParser {
 			'publicSuffix' => 'https://publicsuffix.org/list/public_suffix_list.dat',
 			'tld'          => 'https://data.iana.org/TLD/tlds-alpha-by-domain.txt'
 		];
-	}
-	function __destruct() {
-		unset($this->MVCish);
 	}
 
 	public function publicSuffixListFile() {

@@ -70,15 +70,15 @@ class Exception extends \Exception {
 	}
 	//public function __construct($message=null,$code=null, \Exception $previous = null) {
 	//	parent::__construct($message, $code, $previous);
-	//	error_log("original trace=".\AuntieWarhol\MVCish\MVCish::getCallerInfo(0,$this->getTrace()));
-	//	error_log("filtered trace1=".\AuntieWarhol\MVCish\MVCish::getCallerInfo(0,$this->getFilteredTrace()));
+	//	error_log("original trace=".Debug::getTraceString(0,$this->getTrace()));
+	//	error_log("filtered trace1="Debug::getTraceString(0,$this->getFilteredTrace()));
 	//}
 	//**********************************************************************************
 
 	private array $filteredTrace;
 	public function getFilteredTrace(bool $reset=false):array {
 		if ($reset || !isset($this->filteredTrace)) {
-			$this->filteredTrace = \AuntieWarhol\MVCish\MVCish::getRelevantCallers(0,$this);
+			$this->filteredTrace = Debug::getFilteredTrace(0,$this);
 		}
 		return $this->filteredTrace;
 	}
@@ -94,21 +94,32 @@ class Exception extends \Exception {
 				$this->line = $trace[0]['line'];
 			}
 		}
-		//error_log("filtered trace2=".\AuntieWarhol\MVCish\MVCish::getCallerInfo(0,$this->getFilteredTrace()));
+		//error_log("filtered trace2=".Debug::getTraceString(0,$this->getFilteredTrace()));
 	}
 
 
 	// translate php errors and warnings into exception objects
 	public static function handlerFactory($MVCish, $errno, $errstr, $errfile, $errline) {
 
-		$errstr = \AuntieWarhol\MVCish\MVCish::cleanMVCishWarning($errno,$errstr);
+		$errstr = self::cleanWarningPrefix($errno,$errstr);
 
-		$e = $MVCish->isFatalPHPerrCode($errno) ?
-			\AuntieWarhol\MVCish\Exception\ServerError::create($errstr,null,null,$errfile,$errline,$errno):
-			\AuntieWarhol\MVCish\Exception\ServerWarning::create($errstr,null,null,$errfile,$errline,$errno);
+		$e = Debug::isFatalPHPerrCode($errno) ?
+			Exception\ServerError::create($errstr,null,null,$errfile,$errline,$errno):
+			Exception\ServerWarning::create($errstr,null,null,$errfile,$errline,$errno);
 
 		$e->phpErrorCode($errno);
 		return $e;
+	}
+
+	private const WARNING_PREFIX ='E_MVCISH_WARNING: ';
+	public static function getWarningPrefix() { return $this->warningPrefix; }
+
+	public static function cleanWarningPrefix(int $errno, string $errstr,bool &$wasCleaned=false):string {
+		if (($errno == E_USER_WARNING) && (substr($errstr,0,18) == self::WARNING_PREFIX)) {
+			$wasCleaned = true;
+			return substr($errstr,strlen(self::WARNING_PREFIX));
+		}
+		return $errstr;
 	}
 }
 

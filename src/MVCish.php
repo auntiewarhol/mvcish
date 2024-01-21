@@ -9,30 +9,24 @@ use \Plasticbrain\FlashMessages\FlashMessages;
 
 class MVCish {
 
-	public $options = [];
-
-	// CONSTRUCT
-
 	public function __construct(array $options = []) {
 
 		// stash the options and configured environment
-		$this->options = $options;
+		$this->setOptions($options);
 
-		// Prod/Stage/Local or other
-		$this->Environment(
-			isset($this->options['Environment']) ? $this->options['Environment'] : null
-		);
+		// set Environment Prod/Stage/Local or other
+		$this->Environment($this->Options('Environment'));
 
 		// register error handlers
 		if (empty($GLOBALS['MVCISH_IGNORE_ERRORS'])) {
 			//error_log("using MVCish error_handler");
 
 			set_error_handler(function($errno, $errstr, $errfile, $errline){
-				$this->_error_handler($errno, $errstr, $errfile, $errline);
+				Debug::errorHandler($this,$errno, $errstr, $errfile, $errline);
 			},E_ALL);
 			register_shutdown_function(function() {
 				if ($error = error_get_last()) {
-					$this->_error_handler($error['type'],$error['message'],$error['file'],$error['line']);
+					Debug::errorHandler($this,$error['type'],$error['message'],$error['file'],$error['line']);
 				}
 			});
 		}
@@ -42,119 +36,39 @@ class MVCish {
 		}
 	}
 
-	private function _error_handler($errno, $errstr, $errfile, $errline) {
-		//error_log("error_handler ".$this->translatePHPerrCode($errno).' '.$errstr.' '.$errfile.' '.$errline);
-		// ignore warnings when @ error suppression operator used
-		$er = error_reporting();
-		if ($er == 0 || $er == 4437) return true; //4437=php8 hack
 
-		// hack to ignore this warning, because the only way to test if something is serialized
-		// is to try and unserialize it. Maybe that should use suppression operator tho?
-		if (($errno == E_NOTICE) && (substr($errstr,0,11) == 'unserialize')) return true;
+	// ***************************************************************
+	// CONFIGURATION *************************
 
-		$logged = false;
-		$exception = null; $messages = [];
+	// OPTIONS -- for configuring MVCish itself 
+	// 	(the params you passed in construction)
 
-		try {
-			// hacky but not sure how else to do it: if you know you're triggering us with an 
-			// exception deliberately, set handlingException so we'll use the one you already have
-			// (see "Exception\ServerWarning-trigger()")
-			if (isset($GLOBALS['MVCish_handlingException'])) {
-				$exception = $GLOBALS['MVCish_handlingException'];
-				$GLOBALS['MVCish_handlineException'] = null;
-			}
-			else {
-				$exception = \AuntieWarhol\MVCish\Exception::handlerFactory(
-					$this, $errno, $errstr, $errfile, $errline
-				);
-			}
-			$this->logExceptionMessage($exception);
-			$logged = true;
+	private array $_options = [];
+	public function Options(string $key=null,string $new=null) {
+		if (isset($key)) {
+			if (isset($set)) $this->_options[$key] = $set;
+			return array_key_exists($key,$this->_options) ?
+				$this->_options[$key] : null;
 		}
-		catch(\Throwable $e) {
-			$messages[] = "Error creating MVCish\Exception: ".$e->getMessage();
-
-			// old fashioned way. just in case
-			$logged = false;
-			try {
-				if ($this->isFatalPHPerrCode($errno)) {
-					$exception = new \Exception($errstr);
-					$this->logExceptionMessage($exception);
-					$logged = true;
-				}
-			}
-			catch(\Throwable $e) {
-				$messages[] = "Error creating generic Exception: ".$e->getMessage();
-			}
-		}
-		if (!$logged) { // old fashioned way if all else failed
-			$messages = array_merge(
-				$this->_buildErrorMessages($errno, $errstr, $errfile, $errline),
-				$messages
-			);
-			$msgMethod = $this->isFatalPHPerrCode($errno) ? 'error' : 'warning';
-			try {
-				foreach ($messages as $m) {
-					$this->log('MVCish')->$msgMethod($m);
-				}
-			} catch (\Throwable $e) {
-				$msg[] = "Additional error encountered writing to MVCish log: ".$e->getMessage();
-				foreach ($msg as $m) { error_log($m); }
-			}
-		}
-
-		if ($this->isFatalPHPerrCode($errno)) {
-			if (isset($exception)) $this->processExceptionResponse($exception);
-			exit(1);
-		}
-		return true;
+		return $this->_options;
+	}
+	private function setOptions(array $new=null,bool$merge=false):void {
+		$this->_options = $merge ? 
+			array_replace_recursive($this->_options,$new ?? []) : $new;
 	}
 
-	// usually let Environment and Exception take care of this, but for catastrophic
-	// failures where we can't get one or both of those, here's the dumb way
-	private function _buildErrorMessages($errno, $errstr, $errfile, $errline):array {
 
-		$isMVCishWarning = false;
-		$errstr = \AuntieWarhol\MVCish\MVCish::cleanMVCishWarning($errno,$errstr,$isMVCishWarning);
-
-		//hacky, but...
-		if ($isMVCishWarning) {
-			$errConst = 'E_MVCISH_WARNING';
-		}
-		else {
-			$errConst = $this->translatePHPerrCode($errno);
-		}
-
-		$messages = [];
-		$messages[] = $errConst.": $errstr"
-			.(($errConst != 'E_MVCISH_WARNING') ? "; line $errline:$errfile" : '');
-
-		if ($this->isFatalPHPerrCode($errno)) {
-			$messages[] = "TRACE: ".$this->getCallerInfo();
-		}
-		return $messages;
-	}
-
-	public static function cleanMVCishWarning(int $errno, string $errstr,bool &$wasCleaned=false):string {
-		if (($errno == E_USER_WARNING) && (substr($errstr,0,18) == 'E_MVCISH_WARNING: ')) {
-			$wasCleaned = true;
-			return substr($errstr,18);
-		}
-		return $errstr;
-	}
-
-	// CONFIG *************************
-
+	// (DEPLOYMENT) ENVIRONMENT 
 	private $_environment;
-	public function Environment($new=null): \AuntieWarhol\MVCish\Environment {
+	public function Environment($new=null): Environment {
 		if (!$this->_environment) {
 			$new ??= 'Production';
 			try {
 				$this->_environment =
-					\AuntieWarhol\MVCish\Environment\Factory::getEnvironment($this,$new);
+					Environment\Factory::getEnvironment($this,$new);
 			}
 			catch(\Exception $e) {
-				throw new \AuntieWarhol\MVCish\Exception\ServerError(
+				throw new Exception\ServerError(
 					'Unable to instantiate Environment "'.$new.'": '
 						. $e->getMessage());
 			}
@@ -162,17 +76,33 @@ class MVCish {
 		return $this->_environment;
 	}
 
+	// APP CONFIG -- for client app config files, not MVCish configuration
+	//	Config can vary by Environment
 	private $_appConfig = null;
+	public function Config(string $key=null,$set=null) {
+		if (!isset($this->_appConfig)) $this->initAppConfig();
+
+		if (isset($key)) {
+			if (isset($set)) $this->_appConfig[$key] = $set;
+			return array_key_exists($key,$this->_appConfig) ?
+				$this->_appConfig[$key] : null;
+		}
+		return $this->_appConfig;
+	}
+
+	// convenience accessor when we want either (Option Priority default)
+	public function OptionConfig(string $key,bool $priorityOption=true) {
+		return $priorityOption ? 
+			($this->Options($key) ?? $this->Config($key)) :
+			($this->Config($key)  ?? $this->Options($key));
+	}
+
 	private function initAppConfig() {
 		//error_log("initAppConfig");
 
 		// if appConfig set in MVCish Options
-		if (isset($this->options['appConfig']) && 
-			($appConfig = $this->options['appConfig'])
-		) {
-			if (isset($this->options['appConfigPriority']) &&
-				($this->options['appConfigPriority'] == 'OPTION')
-			) {
+		if ($appConfig = $this->Options('appConfig')) {
+			if ($this->Options('appConfigPriority') == 'OPTION') {
 				// Option replaces Environment
 				$this->_appConfig = array_replace(
 					$this->Environment()->getAppConfig(),
@@ -198,9 +128,7 @@ class MVCish {
 	private function _getOptionAppConfig():array {
 		$result = null;
 		// if appConfig set in MVCish Options
-		if (isset($this->options['appConfig']) && 
-			($appConfig = $this->options['appConfig'])
-		) {
+		if ($appConfig = $this->Options('appConfig')) {
 			if (is_array($appConfig)) {
 				// appConfig has just been passed in as an array
 				return $appConfig;
@@ -212,7 +140,7 @@ class MVCish {
 						$result = include($appConfig);
 					}
 					catch(\Throwable $e) {
-						throw new \AuntieWarhol\MVCish\Exception\ServerError(
+						throw new Exception\ServerError(
 							"Failed to parse appConfig from file ".$appConfig
 							.': '.$e->getMessage());
 					}
@@ -222,41 +150,29 @@ class MVCish {
 		return (empty($result) ? [] : $result);
 	}
 
-	public function Config($key=null) {
-		if (!isset($this->_appConfig)) {
-			$this->initAppConfig();
-		}
-		if (!isset($key)) {
-			return $this->_appConfig;
-		}
-		if (array_key_exists($key,$this->_appConfig)) {
-			return $this->_appConfig[$key];
-		}
-		return;
-	}
 
+	// Working Directories *******************************************
 
 	private $usingTempAppDir = false;
 	private $appDirectory = null;
 	public function getAppDirectory() {
 		if (!isset($this->appDirectory)) {
-			if (empty($this->options['appDirectory'])) {
+			if ($appDirectory = $this->Options('appDirectory')) {
+				$this->appDirectory =
+					rtrim($appDirectory,DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
+			}
+			else {
 				if (!$this->isCLI()) {
-					$this->throwWarning(
+					Exception\ServerWarning::throwWarning(
 						"Using MVCish without setting an application directory is discouraged; using tmpfiles."
 					);
 				}
 				$this->appDirectory = sys_get_temp_dir().DIRECTORY_SEPARATOR;
 				$this->usingTempAppDir = true;
 			}
-			else {
-				$this->appDirectory =
-					rtrim($this->options['appDirectory'],DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
-			}
-
 			if (!file_exists($this->appDirectory)) {
 				if (!mkdir($this->appDirectory,0755,true)) {
-					throw new \AuntieWarhol\MVCish\Exception\ServerError(
+					throw new Exception\ServerError(
 						"Failed to find or create App Directory: ".$this->appDirectory);
 				}
 			}
@@ -268,12 +184,12 @@ class MVCish {
 	}
 
 	private function _findOrCreateChildDirectory(string $parentDir, string $name,string $key,string $configKey=null):void {
-		// you can set these directly in options
+		// you can set these directly in Options
 		// or we will create it in the appDirectory
 		
-		if (isset($this->options[$key])) {
+		if ($keyOption = $this->Options($key)) {
 			$this->$key =
-				rtrim($this->options[$key],DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
+				rtrim($keyOption,DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
 		}
 		else if (isset($configKey) && ($configVal = $this->Config($configKey))) {
 			$this->$key =
@@ -285,7 +201,7 @@ class MVCish {
 
 		if (!file_exists($this->$key)) {
 			if (!mkdir($this->$key,0755,true)) {
-				throw new \AuntieWarhol\MVCish\Exception\ServerError(
+				throw new Exception\ServerError(
 					"Failed to find or create $name directory: ".$this->$key);
 			}
 		}
@@ -333,6 +249,66 @@ class MVCish {
 	}
 
 
+	// LOGGING*********************** ***************************
+
+	private $_logfile;
+	private $_logs = [];
+	public function log($channel = null) {
+
+		$name = $this->Config('APPLICATION_NAME') ?	$this->Config('APPLICATION_NAME') : 'MVCish';
+		if (!$channel) $channel = $name;
+
+		if (!array_key_exists($channel,$this->_logs)) {
+
+			if (!$this->_logfile) {
+				if ($this->usingTempAppDir()) {
+					$this->_logfile = 'php://stdout';
+				}
+				else {
+
+					$logConfig = $this->Config('LOGFILE');
+					$logfile = $this->getLogDirectory()
+						.(isset($logConfig) ? $logConfig : $name.'.log');
+
+					if (!file_exists($logfile)) {
+						if (!touch($logfile))
+							throw new Exception\ServerError("Failed to create logfile");
+					}
+					$this->_logfile = $logfile;
+				}
+				//error_log("Writing log to ".$this->_logfile);
+			}
+
+			$logger      = new Logger($channel);
+			$handler = new StreamHandler($this->_logfile,
+				constant('Monolog\Logger::'.strtoupper($this->Environment()->getLoggerLevel()))
+			);
+			if ($formatter = $this->Environment()->getLineFormatter()) {
+				$handler->setFormatter($formatter);
+			}
+			$logger->pushHandler($handler);
+			$this->_logs[$channel] = $logger;
+		}
+		return $this->_logs[$channel];
+	}
+
+	public function logExceptionMessage(\Throwable $e,string $basemsg=''):void {
+		//error_log("logging ".$e->getMessage());
+		try {
+			$environment = $this->Environment();
+			if ($logLevel = $environment->getErrCodeLogLevel($e->getCode())) {
+				$msg = $environment->buildExceptionMessage($e,$basemsg);
+				$this->log('MVCish')->$logLevel($msg);
+			}
+		}
+		catch(\Throwable $e) {
+			error_log("Fatal error writing to error logs: ".$e->getMessage());
+			exit(1);
+		}
+		//error_log("exiting logException");
+	}
+
+
 	// MODEL ************************
 
 		/* 'Model' is only very loosely coupled; just looks for the requested class,
@@ -341,7 +317,7 @@ class MVCish {
 				$user = $MVCish->Model('\Models\UserQuery'); // returns '\Models\UserQuery'
 				$user = $MVCish->Model('UserQuery');         // same, if 'Models\' configured as MODEL_NAMESPACE
 
-			A model_initialize function can be passed in MVCish options to do any
+			A model_initialize function can be passed in MVCish Options to do any
 			setup work needed for the model when MVCish starts.
 		*/
 
@@ -352,7 +328,7 @@ class MVCish {
 		// INIT MODEL if so configured. can come from
 		// options or config (options take priority)
 		if (
-			(isset($this->options['MODEL']) && ($mconfig = $this->options['MODEL'])) ||
+			($mconfig = $this->Options('MODEL')) ||
 			($mconfig = $this->Config('MODEL'))
 		) {
 			if (array_key_exists('INIT',$mconfig)) {
@@ -401,8 +377,11 @@ class MVCish {
 
 	// CONTROLLER ***************************
 
-	public function Run($controller=null,$options=[]):bool {
-		$this->options = array_replace_recursive($this->options,$options);
+	public function Run($controller=null,$ctrlOptions=[]):bool {
+
+		// update/override Options
+		$this->setOptions($ctrlOptions,true);
+
 		try {
 			// Authorize
 			if ($this->authorize()) {
@@ -428,45 +407,17 @@ class MVCish {
 		return true;
 	}
 
-	private function logExceptionMessage(\Throwable $e,string $basemsg=''):void {
-		//error_log("logging ".$e->getMessage());
-		try {
-			$environment = $this->Environment();
-			if ($logLevel = $environment->getErrCodeLogLevel($e->getCode())) {
-				$msg = $environment->buildExceptionMessage($e,$basemsg);
-				$this->log('MVCish')->$logLevel($msg);
-			}
-		}
-		catch(\Throwable $e) {
-			error_log("Fatal error writing to error logs: ".$e->getMessage());
-			exit(1);
-		}
-		//error_log("exiting logException");
+
+	private array $pathArgs;
+	private string $controllerName;
+	public function controllerName($set=null) {
+		if (isset($set)) $this->controllerName = $set;
+		return $this->controllerName;
 	}
-
-	private function authorize() {
-		/* MVCish doesn't know anything about Authentication/Authorization.
-			but if you set an object on $MVCish->Auth(), and that object has
-			an "Authorize" method, we'll call it, and pass it anything passed
-			as an 'Authorize' option. The method should return true if authorized.
-			If it returns false, we'll throw an unauthorized exception. Your object
-			can also throw its own \AuntieWarhol\MVCish\Exception if you want to control
-			the messaging (or throw Forbidden instead of Unauthorized, etc)
-		*/
-		if ($this->Auth() && is_callable([$this->Auth(),'Authorize'])) {
-			if (!$this->Auth()->Authorize(
-				isset($this->options['Authorize']) ? $this->options['Authorize'] : null
-			)) {
-				throw new \AuntieWarhol\MVCish\Exception\Unauthorized();
-			}
-		} // else assume authorized
-		return true;
+	public function pathArgs($set=null) {
+		if (isset($set)) $this->pathArgs = $set;
+		return $this->pathArgs;
 	}
-
-
-	public $Response = ['success' => true]; //assume success
-	public $pathArgs = null;
-	public $controllerName = null;
 
 	private function runController($controller) {
 		/*
@@ -487,19 +438,14 @@ class MVCish {
 				$response = include($controller);
 			}
 
-			// Response should typically be an array, with a 'success' key,
-			// along with any other keys appropriate for the situation. However it
-			// could also be a bool, in which case we'll convert it like so:
-			if (is_bool($response)) $response = ['success' => $response];
-
 			// otherwise we'll take any evaluates-true response you send.
 			// for example other than the typical array, you might send an object
 			// that can serialize itself for the json view.
 			// if the view can't handle your response, that's on you.
 
 			if (!empty($response)) {
-				$this->Response = $response;
-				//$this->log('MVCish')->debug("Controller Respone: ".json_encode($this->Response,true));
+				$this->setResponse($response);
+				//$this->log('MVCish')->debug("Controller Response: ".json_encode($this->Response(),true));
 			}
 			// if controller ran but didn't send any response,
 			// assume all is well and use the default response.
@@ -529,8 +475,8 @@ class MVCish {
 				$fullfile .= DIRECTORY_SEPARATOR.'index.php';
 				if (file_exists($fullfile)) {
 					//$this->log()->debug("Found controller: $fullfile, args=".print_r($pathArgs,true));
-					$this->pathArgs = $pathArgs;
-					$this->controllerName = substr($fullfile,-(strlen($fullfile) - strlen($ctrlDirectory)));
+					$this->pathArgs($pathArgs);
+					$this->controllerName(substr($fullfile,-(strlen($fullfile) - strlen($ctrlDirectory))));
 					return $fullfile;
 				}
 				//$this->log()->debug("No url controller $fullfile");
@@ -541,8 +487,8 @@ class MVCish {
 
 				if (file_exists($fullfile)) {
 					//$this->log()->debug("Found controller: $fullfile, args=".print_r($pathArgs,true));
-					$this->pathArgs = $pathArgs;
-					$this->controllerName = substr($fullfile,-(strlen($fullfile) - strlen($ctrlDirectory)));
+					$this->pathArgs($pathArgs);
+					$this->controllerName(substr($fullfile,-(strlen($fullfile) - strlen($ctrlDirectory))));
 					return $fullfile;
 				}
 				//$this->log()->debug("No url controller $fullfile");
@@ -564,23 +510,23 @@ class MVCish {
 				if ($decodedFile = $this->getUrlController($decoded,false)) {
 					//$this->log()->debug("found decoded controller: ".$decodedFile);
 					return $this->redirect($decoded,301);
-					//throw new \AuntieWarhol\MVCish\Exception\MovedPermanently($decoded);
+					//throw new Exception\MovedPermanently($decoded);
 				}
 			}
 		}
 		//$this->log()->warning("no controller found for ".$_SERVER['REQUEST_URI']);
 	}
 
-	private function processExceptionResponse(\Throwable $e):bool {
+	public function processExceptionResponse(\Throwable $e):bool {
 		// if it's our exception (or a subclass of our exceptions),
-		// then we the exception message is the error we want to return
+		// then the exception message is the error we want to return
 		if ($e instanceof \AuntieWarhol\MVCish\Exception) {
-			$this->Response = ['success' => false,
+			$this->setResponse(['success' => false,
 				'code'       => $e->getCode(),
 				"error"      => $e->getMessage(),
 				'messages'   => ['error' => $e->getMessage()],
 				'statusText' => $e->statusText()
-			];
+			]);
 			// custom method on our Exceptions to tell us if/where we should redirect
 			if ($redirect = $e->getRedirectUrl()) {
 
@@ -597,24 +543,24 @@ class MVCish {
 							$this->processMessages();
 							if (isset($parsed['query'])) parse_str($parsed['query'],$_GET);
 							$_SERVER['REQUEST_URI'] = $newReqUri;
-							$this->options['template'] = null;
+							$this->Options('template',null);
 							//$this->log('MVCish')->debug('do internal redirect: '.$redirect);
 							return $this->Run($controller);
 						}
 					}
 				}
 				// otherwise, or if didn't find controller above, do server redirect
-				$this->Response['redirect'] = $redirect;
+				$this->Response('redirect',$redirect);
 			}
 		}
 		// any other/unexpected exceptions return generic server error
 		else {
-			$this->Response = ['success' => false,
-				'code'     => \AuntieWarhol\MVCish\Exception::SERVER_ERROR,
-				"error"    => \AuntieWarhol\MVCish\Exception::serverError,
-				'messages' => ['error' => \AuntieWarhol\MVCish\Exception::serverError],
-				'statusText' => \AuntieWarhol\MVCish\Exception::serverError
-			];
+			$this->setResponse(['success' => false,
+				'code'     => Exception::SERVER_ERROR,
+				"error"    => Exception::serverError,
+				'messages' => ['error' => Exception::serverError],
+				'statusText' => Exception::serverError
+			]);
 		}
 		return $this->processResponse();
 	}
@@ -623,46 +569,63 @@ class MVCish {
 	private $responseMessageTypes = ['info','success','warning','error'];
 
 	private function processResponse():bool {
-		if (isset($this->options['beforeRender']) && is_callable($this->options['beforeRender'])) {
+		if (($beforeRender = $this->Options('beforeRender')) && is_callable($beforeRender)) {
 			// if optional beforeRender hook returns false, abort
-			if (!$this->options['beforeRender']($this)) {
-				return true;
-			}
+			if (!$beforeRender($this)) return true;
 		}
 		// skip if controller flags that it already did the work
-		if (!empty($this->options['rendered'])) return true;
+		if ($this->Options('rendered')) return true;
 
-		if (is_array($this->Response)) {
+		$resp = $this->Response();
+		if (is_array($resp) && !$this->Response('success')) {
 			// render any non-sucess as Error
-			if (empty($this->Response['success'])) {
-				return $this->View()->renderError();
-			}
+			return $this->View()->renderError();
 		}
 		// render the View normally
 		return $this->View()->renderView();
 	}
 
 	public function processMessages() {
-		if (is_array($this->Response)) {
-			//array-ify any scalar messages and flash-display/store them
-			if (isset($this->Response) && isset($this->Response['messages'])) {
-				foreach($this->responseMessageTypes AS $mtype) {
-					if (isset($this->Response['messages'][$mtype])) {
-						if (!is_array($this->Response['messages'][$mtype])) {
-							$this->Response['messages'][$mtype] = [$this->Response['messages'][$mtype]];
-						}
-						foreach($this->Response['messages'][$mtype] AS $m) {
-							$this->flashmsg()->$mtype($m);
-						}
+		//array-ify any scalar messages and flash-display/store them
+		if ($messages = $this->Response('messages')) {
+			foreach($this->responseMessageTypes AS $mtype) {
+				if (isset($messages[$mtype])) {
+					if (!is_array($messages[$mtype])) {
+						$messages[$mtype] = [$messages[$mtype]];
+					}
+					foreach($messages[$mtype] AS $m) {
+						$this->flashmsg()->$mtype($m);
 					}
 				}
 			}
+			$this->Response('messages',$messages);
 		}
 	}
 
 
+	// RESPONSE ***************************************************************
+	
+	public $_response = ['success' => true]; //assume success
+	public function Response(string $key=null,$set=null,bool $delete=false) {
+		if (isset($key)) {
+			//prolly should warn or something but I'm replacing this anyway
+			if (!is_array($this->_response)) return null;
 
-	// AUTH ***************************
+			if ($delete) $set = null;
+			if ($delete || isset($set)) $this->_response[$key] = $set;
+			return array_key_exists($key,$this->_response) ?
+				$this->_response[$key] : null;
+		}
+		return $this->_response;
+	}
+
+	private function setResponse($response):void {
+		if (is_bool($response)) $response = ['success' => $response];
+		$this->_response = $response;
+	}
+
+
+	// AUTH *******************************************************************
 
 		// we don't have an integrated user auth package; can pass in an
 		// object from other library for us to stash and make available
@@ -684,169 +647,29 @@ class MVCish {
 		}
 	}
 
+	private function authorize() {
+		/* MVCish doesn't know anything about Authentication/Authorization.
+			but if you set an object on $MVCish->Auth(), and that object has
+			an "Authorize" method, we'll call it, and pass it anything passed
+			as an 'Authorize' option. The method should return true if authorized.
+			If it returns false, we'll throw an unauthorized exception. Your object
+			can also throw its own \AuntieWarhol\MVCish\Exception if you want to control
+			the messaging (or throw Forbidden instead of Unauthorized, etc)
+		*/
+		if ($this->Auth() && is_callable([$this->Auth(),'Authorize'])) {
+			if (!$this->Auth()->Authorize($this->Options('Authorize'))) {
+				throw new Exception\Unauthorized();
+			}
+		} // else assume authorized
+		return true;
+	}
+
 
 
 	// UTILS / MISC ***********************
 
-	public static function throwWarning(string $message,string $file=null, int $line=null):void {
-		$w = \AuntieWarhol\MVCish\Exception\ServerWarning::create($message,null,null,$file,$line);
-		$w->trigger();
-	}
-
 	public static function isCLI() {
 		return php_sapi_name() == "cli";
-	}
-
-	public static function getCallerInfo(int $max=0,array|\Throwable $trace=null):string {
-		if (is_object($trace) && method_exists($trace,'getFilteredTrace')) {
-			$trace = $trace->getFilteredTrace();
-		}
-		return implode('; ',self::getCallerInfoStrings($max,$trace));
-	}
-
-	public static function getCallerInfoStrings(int $max=0,array $trace=null):array {
-		if (is_object($trace)) {
-			$trace = self::getRelevantCallers($max,$trace);
-		}
-		$trace ??= self::getRelevantCallers($max);
-
-		$strings = [];
-		foreach($trace as $t) {
-			foreach(['file','class'] as $k) { $t[$k] ??= ''; }
-			$strings[] = 
-				(empty($t['file'])     ? '' : basename($t['file']).': ').
-				(empty($t['class'])    ? '' : $t['class'].'->').
-				(empty($t['function']) ? '' : 
-					$t['function'].'('.	(empty($t['args']) ? '' :
-						implode(',',
-							array_map(function($v) {
-								if (is_object($v) && method_exists($v,'__toString')) {
-									$v = $v->__toString();
-								}
-								return 	is_string($v) ? ('"'.(strlen($v) > 7 ? substr($v,0,7).'...' : $v).'"') :
-										(is_object($v) ? '$'.get_class($v) : strtoupper(gettype($v)));
-							},$t['args'])
-						)).')');
-		}
-		return $strings;
-	}
-
-	public static function getRelevantCallers(int $max=0,\Throwable $forException=null):array {
-		$trace = isset($forException)? $forException->getTrace() : debug_backtrace();
-		array_shift($trace); // pop this call
-
-		// try to skip all the stuff what likely went into outputting the error
-
-		$ignoreUntil = null;
-		if (isset($forException)) {
-			$ignoreUntil = ['file' => $forException->getFile(), 'line' => $forException->getLine()];
-			//error_log("IE= ".$forException->getFile().' '.$forException->getLine());
-		}
-
-		foreach ($trace as $i => $t) {
-			$skips = [];
-			if (
-				(isset($ignoreUntil) && !(isset($t['file']) && isset($t['line']) &&
-					($t['file'] == $ignoreUntil['file']) && ($t['file'] == $ignoreUntil['file']))) ||
-
-				(isset($t['class']) && (($t['class'] == 'Exception') ||
-					is_subclass_of($t['class'],'Exception'))) ||
-
-				(isset($t['file']) && str_contains($t['file'],'mvcish/src/Exception')) ||
-
-				(((isset($t['class']) && ($t['class'] == 'AuntieWarhol\MVCish\MVCish')) || 
-				 (isset($t['file'])  && ($t['file'] == __FILE__))) &&
-				in_array($t['function'],['logExceptionMessage','_error_handler','trigger_error',
-					'throwWarning','getCallerInfo','getCallerInfoStrings',
-					'AuntieWarhol\MVCish\{closure}'])) ||
-				
-				((isset($t['class']) && (($t['class'] == 'AuntieWarhol\MVCish\Environment') ||
-				  is_subclass_of($t['class'],'AuntieWarhol\MVCish\Environment'))) &&
-				in_array($t['function'],['buildDefaultExceptionMessage','buildExceptionMessage']))
-			) {
-				$count = count($trace);
-				$skips[] = $trace[$i]; unset($trace[$i]);
-				//error_log('skipping '.$t['function'].' trace was '.$count.' now '.count($trace));
-			}
-			else {
-				//error_log('keeping '.($t['file'].' ' ?? '').($t['class'] ?? '').'->'.$t['function'].' trace is '.count($trace));
-				unset($ignoreUntil);
-				break; //once we find a keeper, keep the rest
-			}
-		}
-		// just in case we emptied it out
-		if (empty($trace) && !empty($skips)) { $trace = $skips; }
-
-		return ($max > 0) ? array_slice($trace,0,$max) : $trace;
-	}
-
-	public static function translatePHPerrCode($errno) {
-		$e_type = '';
-		switch ($errno) {
-			case 1: $e_type = 'E_ERROR'; break;
-			case 2: $e_type = 'E_WARNING'; break;
-			case 4: $e_type = 'E_PARSE'; break;
-			case 8: $e_type = 'E_NOTICE'; break;
-			case 16: $e_type = 'E_CORE_ERROR'; break;
-			case 32: $e_type = 'E_CORE_WARNING'; break;
-			case 64: $e_type = 'E_COMPILE_ERROR'; break;
-			case 128: $e_type = 'E_COMPILE_WARNING'; break;
-			case 256: $e_type = 'E_USER_ERROR'; break;
-			case 512: $e_type = 'E_USER_WARNING'; break;
-			case 1024: $e_type = 'E_USER_NOTICE'; break;
-			case 2048: $e_type = 'E_STRICT'; break;
-			case 4096: $e_type = 'E_RECOVERABLE_ERROR'; break;
-			case 8192: $e_type = 'E_DEPRECATED'; break;
-			case 16384: $e_type = 'E_USER_DEPRECATED'; break;
-			case 30719: $e_type = 'E_ALL'; break;
-			default: $e_type = 'E_UNKNOWN'; break;
-		}
-		return $e_type;
-	}
-	public static function isFatalPHPerrCode($errno) {
-		return in_array($errno,[E_ERROR,E_PARSE,E_CORE_ERROR,E_COMPILE_ERROR,E_USER_ERROR]);
-	}
-
-
-	private $_logfile;
-	private $_logs = [];
-	public function log($channel = null) {
-
-		$name = $this->Config('APPLICATION_NAME') ?	$this->Config('APPLICATION_NAME') : 'MVCish';
-		if (!$channel) $channel = $name;
-
-		if (!array_key_exists($channel,$this->_logs)) {
-
-			if (!$this->_logfile) {
-				if ($this->usingTempAppDir()) {
-					$this->_logfile = 'php://stdout';
-				}
-				else {
-
-					$logConfig = $this->Config('LOGFILE');
-					$logfile = $this->getLogDirectory()
-						.(isset($logConfig) ? $logConfig : $name.'.log');
-
-					if (!file_exists($logfile)) {
-						if (!touch($logfile))
-							throw new \AuntieWarhol\MVCish\Exception\ServerError("Failed to create logfile");
-					}
-					$this->_logfile = $logfile;
-				}
-				//error_log("Writing log to ".$this->_logfile);
-			}
-
-			$logger      = new Logger($channel);
-			$handler = new StreamHandler($this->_logfile,
-				constant('Monolog\Logger::'.strtoupper($this->Environment()->getLoggerLevel()))
-			);
-			if ($formatter = $this->Environment()->getLineFormatter()) {
-				$handler->setFormatter($formatter);
-			}
-			$logger->pushHandler($handler);
-			$this->_logs[$channel] = $logger;
-		}
-		return $this->_logs[$channel];
 	}
 
 	private $_uri;
@@ -966,7 +789,7 @@ class MVCish {
 			if (array_key_exists('SubjectTemplate',$emaildata) &&
 				($subjectTemplate = $emaildata['SubjectTemplate'])
 			) {
-				$render = new \AuntieWarhol\MVCish\View\Render($this);
+				$render = new View\Render($this);
 				if (array_key_exists('TemplateData',$emaildata)) {
 					$render->templateData($emaildata['TemplateData']);
 				}
@@ -994,7 +817,7 @@ class MVCish {
 			) {
 				$useHTML = true;
 				if (!isset($render)) {
-					$render = new \AuntieWarhol\MVCish\View\Render($this);
+					$render = new View\Render($this);
 					if (array_key_exists('TemplateData',$emaildata)) {
 						$render->templateData($emaildata['TemplateData']);
 					}

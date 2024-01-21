@@ -80,7 +80,7 @@ class Environment extends \AuntieWarhol\MVCish\Base {
 
 		// option or default
 
-		// if you want to specify a full FilePath to appConfig in MVCish options, use
+		// if you want to specify a full FilePath to appConfig in MVCish Options, use
 		// ['appConfig' => $filepathname], and MVCish will handle it before calling
 		// the Environment. Whereas use 'appConfigFilename' to tell us the name of the
 		// file we should expect to find in the application config directory
@@ -89,12 +89,8 @@ class Environment extends \AuntieWarhol\MVCish\Base {
 
 		if (!isset($this->appConfigFile)) {
 
-			if (empty($this->MVCish->options['appConfigFilename'])) {
-				$acFilename = $this->getDefaultAppConfigFilename();
-			}
-			else {
-				$acFilename = $MVCish->options['appConfigFilename'];
-			}
+			$acFilename = $this->MVCish()->Options('appConfigFilename') ?? 
+				$this->getDefaultAppConfigFilename();
 
 			if ((!$this->isRootClass()) &&
 				(($name = $this->name()) && !empty($name)) &&
@@ -117,7 +113,7 @@ class Environment extends \AuntieWarhol\MVCish\Base {
 		// throw error if looking for a file the client configured.
 		if (!file_exists($appConfigFilePath)) {
 			//error_log("notfound appConfig File $appConfigFilePath");
-			if ($this->isRootClass() && isset($MVCish->options['appConfigFilename'])) {
+			if ($this->isRootClass() && $this->MVCish()->Options('appConfigFilename')) {
 				throw new \AuntieWarhol\MVCish\Exception\ServerError(
 					"Could not find appConfig file: ".$appConfigFilePath);
 			}
@@ -183,7 +179,7 @@ class Environment extends \AuntieWarhol\MVCish\Base {
 
 	public function getPHPorStatusCode(\Throwable $e) {
 		if (method_exists($e,'phpErrorCode') && ($phpErrCode = $e->phpErrorCode())) {
-			return $this->MVCish()->translatePHPerrCode($phpErrCode);
+			return \AuntieWarhol\MVCish\Debug::translatePHPerrCode($phpErrCode);
 		}
 		return $e->getCode();
 	}

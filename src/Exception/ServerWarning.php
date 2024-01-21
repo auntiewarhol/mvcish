@@ -2,6 +2,11 @@
 namespace AuntieWarhol\MVCish\Exception;
 class ServerWarning extends \AuntieWarhol\MVCish\Exception {
 
+	public static function throwWarning(string $message,string $file=null, int $line=null):void {
+		$w = self::create($message,null,null,$file,$line);
+		$w->trigger();
+	}
+
 	public function __construct($message=null,$code=null, \Exception $previous = null) {
 		$this->statusText = parent::warning;
 		if (!isset($message)) $message = parent::warning;

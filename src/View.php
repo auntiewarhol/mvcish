@@ -1,19 +1,7 @@
 <?php
 namespace AuntieWarhol\MVCish;
 
-class View {
-
-	public $MVCish;
-	public function __construct(\AuntieWarhol\MVCish\MVCish $MVCish) {
-		$this->MVCish = $MVCish;
-	}
-	function __destruct() {
-		unset($this->MVCish);
-	}
-
-	public function MVCish() {
-		return $this->MVCish;
-	}
+class View extends Base {
 
 	private $_views = [
 		'html' => true, 'json' => true, 'stream' => true,
@@ -27,23 +15,17 @@ class View {
 
 			// use RenderClass subclass if one is defined
 			$renderHelper = null;
-			if (isset($renderClass) ||
-				(isset($this->MVCish->options['renderClass']) && 
-				($renderClass = $this->MVCish->options['renderClass'])) ||
-						((!empty($this->MVCish->Config('renderClass'))) && 
-						($renderClass = $this->MVCish->Config('renderClass')))
-			) {
+			if ($renderClass ??= ($this->MVCish()->Options('renderClass') ?? $this->MVCish()->Config('renderClass'))) {
 				if (class_exists($renderClass)) {
-					//$this->MVCish->log()->debug('RenderClass='.$renderClass);
-					$this->Render = new $renderClass($this->MVCish);
+					//$this->MVCish()->log()->debug('RenderClass='.$renderClass);
+					$this->Render = new $renderClass($this->MVCish());
 				}
 				else {
-					$this->MVCish->log('MVCish')->error("Can't find RenderClass: $renderClass");
-					throw new \AuntieWarhol\MVCish\Exception\ServerError('Render Class Not Found');					
+					throw new Exception\ServerError('Render Class '.$renderClass.' Not Found');					
 				}
 			}
 			else {
-				$this->Render = new View\Render($this->MVCish);
+				$this->Render = new View\Render($this->MVCish());
 			}
 		}
 		return $this->Render;
@@ -58,10 +40,14 @@ class View {
 			) {
 				$this->_view = strtolower($setview);
 
-			} elseif (isset($this->MVCish->options['view']) &&
-				isset($this->_views[strtolower($this->MVCish->options['view'])])
+			} elseif (
+				($optViewName = $this->MVCish()->Options('view')) &&
+				($optView =
+					(isset($this->_views[$optViewName]) ? $this->_views[$optViewName] :
+						(isset($this->_views[strtolower($optViewName)]) ?
+							$this->_views[strtolower($optViewName)] : null)))
 			) {
-				$this->_view = strtolower($this->MVCish->options['view']);
+				$this->_view = $optView;
 
 			} elseif (isset($_REQUEST['view']) &&
 				isset($this->_views[strtolower($_REQUEST['view'])])
@@ -84,53 +70,51 @@ class View {
 		if ($this->view() == 'html') return true;
 
 		// only if redirecting in json
-		if (is_array($this->MVCish->Response) && !empty($this->MVCish->Response['redirect'])) {
+		if ($this->MVCish()->Response('redirect')) {
 			return true;
 		}
 		return false;
 	}
 
 	public function renderError() {
-		if (is_array($this->MVCish->Response)) {
-			if (isset($this->MVCish->Response['code'])) {
-				if (ini_get('output_buffering')) {
-					ob_clean();// in case we were mid-render
-				}
-				http_response_code($this->MVCish->Response['code']);
+		$MVCish = $this->MVCish();
+		if ($respCode = $MVCish->Response('code')) {
+			$error = $MVCish->Response('error');
 
-				if (in_array($this->MVCish->Response['code'],[500,401,403,404])) {
-					if (!empty($this->MVCish->Response['redirect'])) {
-						// flash messages if redirecting
-						$this->MVCish()->processMessages();
-					}
+			if (ini_get('output_buffering')) {
+				ob_clean();// in case we were mid-render
+			}
+			http_response_code($respCode);
 
-					if ($this->view() == 'json') {
-						$this->initialize_json();
-						// send a 'clean' response, in case it was trying to json_encode
-						// the whole response that threw an exception
-						echo json_encode([
-							'error' => $this->MVCish->Response['error'],
-							'code'  => $this->MVCish->Response['code']
-						]);
-					}
-					elseif (!empty($this->MVCish->Response['redirect'])) {
-						$this->MVCish()->redirect($this->MVCish->Response['redirect'],
-							$this->MVCish->Response['code']);
-					}
-					elseif (($this->view() != 'text') && 
-						($errTemplate = $this->getErrorTemplate($this->MVCish->Response['code']))
-					) {
-						$this->initialize_html();
-						if ($html = $this->Render()->renderFile($errTemplate)) {
-							echo $html;
-						}
-					}
-					else {
-						$this->initialize_text();
-						echo "Exited with Error: ".$this->MVCish->Response['error']."\n";
-					}
-					return false;
+			if (in_array($respCode,[500,401,403,404])) {
+
+				if ($redirect = $MVCish->Response('redirect')) {
+					// flash messages if redirecting
+					$MVCish->processMessages();
 				}
+
+				if ($this->view() == 'json') {
+					$this->initialize_json();
+					// send a 'clean' response, in case it was trying to json_encode
+					// the whole response that threw an exception
+					echo json_encode(['error' => $error, 'code' => $respCode]);
+				}
+				elseif (isset($redirect)) {
+					$MVCish->redirect($redirect,$respCode);
+				}
+				elseif (($this->view() != 'text') && 
+					($errTemplate = $this->getErrorTemplate($respCode))
+				) {
+					$this->initialize_html();
+					if ($html = $this->Render()->renderFile($errTemplate)) {
+						echo $html;
+					}
+				}
+				else {
+					$this->initialize_text();
+					echo "Exited with Error: ".$error."\n";
+				}
+				return false;
 			}
 		}
 		//otherwise, render normally
@@ -147,13 +131,11 @@ class View {
 	public function renderView() {
 
 		// add any headers indicated by the response
-		if (is_array($this->MVCish->Response) && 
-			!empty($this->MVCish->Response['Headers'])
-		) {
-			foreach($this->MVCish->Response['Headers'] as $header) {
+		if ($headers = $this->MVCish()->Response('Headers')) {
+			foreach($headers as $header) {
 				header($header);
 			}
-			unset($this->MVCish->Response['Headers']);
+			$this->MVCish()->Response('Headers',null,true);
 		}
 
 		// now render according to the current view
@@ -167,16 +149,14 @@ class View {
 
 	//** text
 	public function initialize_text() {
-		if (!$this->MVCish->isCLI()) {
+		if (!$this->MVCish()->isCLI()) {
 			header('Content-Type: text/plain; charset=utf-8');
 		}
 	}
 	private function _renderView_text() {
-		if (is_array($this->MVCish->Response)) {
-			if (isset($this->MVCish->Response['Body'])) {
-				echo $this->MVCish->Response['Body'];
-				return true;
-			}
+		if ($body = $this->MVCish()->Response('Body')) {
+			echo $body;
+			return true;
 		}
 	}
 
@@ -186,28 +166,24 @@ class View {
 	}
 	private function _renderView_json() {
 		// flash messages only if we're telling the client to redirect
-		if (is_array($this->MVCish->Response) && !empty($this->MVCish->Response['redirect'])) {
+		if ($this->MVCish()->Response('redirect')) {
 			$this->MVCish()->processMessages();
 		}
 		$this->initialize_json();
-		echo json_encode($this->MVCish->Response);
+		echo json_encode($this->MVCish()->Response());
 		return true;
 	}
 
 	//** xml
 	private function _renderView_xml() {
 		header('Content-Type: text/xml');
-		if (is_array($this->MVCish->Response)) {
+		if ($body = $this->MVCish()->Response('Body')) {
 
 			// Can send a pre-produced Body
-
-			if (isset($this->MVCish->Response['Body'])) {
-				echo $this->MVCish->Response['Body'];
-				return true;
-			}
+			echo $body;
+			return true;
 			// #TODO or Data, which we will encode
-			// (want to use https://github.com/spatie/array-to-xml,
-			// but can't until we're on PHP7)
+			// want to use https://github.com/spatie/array-to-xml?
 		}
 	}
 
@@ -217,8 +193,7 @@ class View {
 		// can set Reponse['contentType'] or let default to stream
 		// can set Response['filename'] to add Content-Disposition header
 
-		$ct = isset($this->MVCish->Response['contentType']) ?
-			$this->MVCish->Response['contentType'] : 'application/octet-stream';
+		$ct = $this->MVCish()->Response('contentType') ?? 'application/octet-stream';
 		header("Content-Type: $ct");
 
 		// binary unless the mime type is text/*
@@ -226,15 +201,14 @@ class View {
 			header('Content-Transfer-Encoding: binary');
 		}
 
-		if (isset($this->MVCish->Response['filename'])) {
-			$filename = str_replace('"','_',$this->MVCish->Response['filename']);
+		if ($filename = $this->MVCish()->Response('filename')) {
+			$filename = str_replace('"','_',$filename);
 			header('Content-Disposition: attachment; filename="'.$filename.'"');
 		}
 
-		if (isset($this->MVCish->Response['streamHandle'])) {
+		if ($stream = $this->MVCish()->Response('streamHandle')) {
 			ob_end_flush();
 			ob_implicit_flush();
-			$stream = $this->MVCish->Response['streamHandle'];
 			while (!feof($stream)) {
 				echo fread($stream,1024);
 			}
@@ -254,17 +228,16 @@ class View {
 		if (empty($contentType)) $contentType = 'text/csv';
 		header("Content-Type: $contentType");
 
-		$filename = isset($this->MVCish->Response['filename']) ?
-			$this->MVCish->Response['filename'] : 'download.csv';
-		$filename = str_replace('"','_',$this->MVCish->Response['filename']);
+		$filename =	$this->MVCish()->Response('filename') ?? 'download.csv';
+		$filename = str_replace('"','_',$filename);
 		header('Content-Disposition: attachment; filename="'.$filename.'"');
 
-		if (!empty($this->MVCish->Response['rows'])) {
-			$callback = (isset($this->MVCish->Response['rowCallback']) &&
-				is_callable($this->MVCish->Response['rowCallback'])) ?
-					$this->MVCish->Response['rowCallback'] : null;
+		if ($rows = $this->MVCish()->Response('rows')) {
 
-			foreach ($this->MVCish->Response['rows'] as $row) {
+			$callback =	(($cb = $this->MVCish()->Response('rowCallback')) &&
+				is_callable($cb)) ? $cb : null;
+
+			foreach ($rows as $row) {
 				if ($callback) $row = $callback($row);
 				echo implode(',',array_map(function($n) {
 					return "\"$n\"";
@@ -285,15 +258,15 @@ class View {
 	}
 	private function _renderView_html() {
 		// flash messages
-		$this->MVCish->processMessages();
+		$this->MVCish()->processMessages();
 
-		$response = $this->MVCish->Response;
+		$response = $this->MVCish()->Response();
 		if (is_object($response) && is_callable([$response,'toArray'])) {
 			$response = $response->toArray();
 		}
 		$this->addHeaders();
 
-		$options  = $this->MVCish->options;
+		$options = $this->MVCish()->Options();
 		if (is_array($response)) {
 			if ($_SERVER['REQUEST_METHOD'] === 'POST' && (!empty($response['success'])) &&
 				empty($response['no_post_redirect'])
@@ -302,12 +275,12 @@ class View {
 					(isset($response['redirect']) ?	$response['redirect'] : $_SERVER['REQUEST_URI']);
 
 				if (isset($response['redirect_params'])) {
-					$uri = $this->MVCish->uri()->addToQuery($uri,$response['redirect_params']);
+					$uri = $this->MVCish()->uriFor($uri,$response['redirect_params']);
 				}
-				return $this->MVCish->redirect($uri,303);
+				return $this->MVCish()->redirect($uri,303);
 			}
 			elseif(array_key_exists('redirect',$response) && isset($response['redirect'])) {
-				return $this->MVCish->redirect($response['redirect']);
+				return $this->MVCish()->redirect($response['redirect']);
 			}
 			elseif (isset($response['Body'])) {
 				// body was provided, just print it, whatever it is.
@@ -326,10 +299,7 @@ class View {
 	// adds headers from HEADERS in Config, 
 	// then calls to add Content-Security-Policy header
 	public function addHeaders() {
-		$headers = isset($this->MVCish->options['HEADERS']) ?
-			$this->MVCish->options['HEADERS'] :
-			$this->MVCish->Config('HEADERS');
-		if (!empty($headers)) {
+		if ($headers = $this->MVCish()->OptionConfig('HEADERS')) {
 			if (is_callable($headers)) {
 				$headers = $headers();
 			}
@@ -337,7 +307,7 @@ class View {
 			foreach ($headers as $header => $content) {
 				$headerName = ($header === 0) ? '' : $header.': ';
 				$headerText = $headerName.$content;
-				//$this->MVCish->log('MVCish')->debug("adding header: ".$headerText);
+				//$this->MVCish()->log('MVCish')->debug("adding header: ".$headerText);
 				header($headerText);
 			}
 		}
@@ -346,11 +316,8 @@ class View {
 
 	// add Content-Security-Policy header from CONTENT_SECURITY_POLICY in Config
 	private function _addCSP() {
-		$csp = isset($this->MVCish->options['CONTENT_SECURITY_POLICY']) ?
-			$this->MVCish->options['CONTENT_SECURITY_POLICY'] :
-			$this->MVCish->Config('CONTENT_SECURITY_POLICY');
-		if (empty($csp)) return;
-		//$this->MVCish->log('MVCish')->debug('CSP data: ',$csp);
+		if (!($csp = $this->MVCish()->OptionConfig('CONTENT_SECURITY_POLICY'))) return;
+		//$this->MVCish()->log('MVCish')->debug('CSP data: ',$csp);
 
 		if (is_array($csp)) {
 			$cspText = '';
@@ -363,7 +330,7 @@ class View {
 		else {
 			$cspText = $csp;
 		}
-		//$this->MVCish->log('MVCish')->debug('cspText: '.$cspText);
+		//$this->MVCish()->log('MVCish')->debug('cspText: '.$cspText);
 		header('Content-Security-Policy: '.$cspText);
 	}
 }
