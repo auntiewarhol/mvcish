@@ -61,15 +61,18 @@ class URI implements \JsonSerializable {
 				$this->_components = $parsed;
 			}
 			else {
-				$caller = '';
-				foreach (debug_backtrace(0) as $trace) {
-					if ($trace['class'] == 'AuntieWarhol\MVCish\View\Render') {
-						$caller = ' in file '.$trace['file'].' line '.$trace['line'];
+				$file = $line = null;
+				foreach (\AuntieWarhol\MVCish\MVCish::getRelevantCallers() as $t) {
+					if (isset($t['file']) && (
+						(isset($t['class']) && ($t['class'] == 'AuntieWarhol\MVCish\View\Render')) ||
+						(isset($t['function']) && in_array($t['function'],['uriFor','assetUriFor']))
+					)) {
+						$file = $t['file']; $line = $t['line'];
 						break;
 					}
 				}
 				\AuntieWarhol\MVCish\MVCish::throwWarning(
-					static::class." Failed to parse url: ".$this->_url.$caller);
+					static::class." Failed to parse url '".$this->_url."'",$file,$line);
 			}
 		}
 		if (is_array($setComponents)) {

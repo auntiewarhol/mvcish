@@ -23,7 +23,7 @@ class Environment extends \AuntieWarhol\MVCish\Base {
 	//	set to false to indicate error should not be logged
 	private string $defaultLogLevel  = 'error';
 	private array  $errCodeLogLevels = [
-		'401' => 'debug', '301' => 'debug',
+		'401' => 'debug', '301' => 'debug', '199' => 'warning',
 		'NONE' => 'error' // same as default but formalized
 	];
 
@@ -179,6 +179,13 @@ class Environment extends \AuntieWarhol\MVCish\Base {
 	private string $nullcode = 'NONE';
 	public function getNullCode():string { return $this->nullcode; }
 
+	public function getPHPorStatusCode(\Throwable $e) {
+		if (method_exists($e,'phpErrorCode') && ($phpErrCode = $e->phpErrorCode())) {
+			return $this->MVCish()->translatePHPerrCode($phpErrCode);
+		}
+		return $e->getCode();
+	}
+
 	// logLevel -- define default & for any error code you want special
 	//	set to false to indicate error should not be logged
 	public function getErrCodeLogLevel($errCode):?string {
@@ -188,23 +195,24 @@ class Environment extends \AuntieWarhol\MVCish\Base {
 	}
 
 	private array $messageBuilders = [];
-	public function messageBuilder(string $errCode,callable $new=null):callable {
+	public function messageBuilder(string $errCode,callable $new=null):?callable {
 		if (isset($new)) {
 			$this->messageBuilders[$errCode] = $new;
 		}
-		if (array_key_exists($errCode,$this->messageBuilders)) {
-			return $this->messageBuilders[$errCode];
-		}
+		return (array_key_exists($errCode,$this->messageBuilders)) ?
+			$this->messageBuilders[$errCode] : null;
 	}
-	public function buildDefaultExceptionMessage(Throwable $e,string $basemsg):string {
-		$code = $e->getCode()    ?: '';
+	public function buildDefaultExceptionMessage(\Throwable $e,string $basemsg):string {
+		// prefer the PHP error code to the $e stauts code, if set.
+		// will only be set if exception was created by our php error handler
+		$code = $this->getPHPorStatusCode($e) ?: '';
 		$msg  = $e->getMessage() ?: '';
-		return $basemsg.' '
+		return (empty($basemsg) ? '' : $basemesg.' ')
 			.(empty($code) ? '' : $code.': ')
 			.$msg .' ('.$e->getFile().': '.$e->getLine().')';
 	}
 
-	public function buildExceptionMessage(Throwable $e,string $basemsg):string {
+	public function buildExceptionMessage(\Throwable $e,string $basemsg):string {
 		// if there's a dedicated builder for the errCode, use that
 		if (($code = $e->getCode()) && ($builder = $this->messageBuilder($code))) {
 			return $builder($e,$basemsg);

@@ -43,52 +43,106 @@ class MVCish {
 	}
 
 	private function _error_handler($errno, $errstr, $errfile, $errline) {
+		//error_log("error_handler ".$this->translatePHPerrCode($errno).' '.$errstr.' '.$errfile);
+		// ignore warnings when @ error suppression operator used
 		$er = error_reporting();
 		if ($er == 0 || $er == 4437) return true; //4437=php8 hack
 
-		$errConst = $this->translatePHPerrCode($errno);
-		//hacky, but...
-		if (($errno == E_USER_WARNING) && ($errfile == __FILE__) &&
-			(substr($errstr,0,18) == 'E_MVCISH_WARNING: ')) {
-			$errConst = 'E_MVCISH_WARNING';
-			$errstr = substr($errstr,18);
-		}
+		// hack to ignore this warning, because the only way to test if something is serialized
+		// is to try and unserialize it. Maybe that should use suppression operator tho?
+		if (($errno == E_NOTICE) && (substr($errstr,0,11) == 'unserialize')) return true;
 
-		$msg = [$errConst.": $errstr"
-			.(($errConst != 'E_MVCISH_WARNING') ? "; line $errline:$errfile" : '')];
+		$logged = false;
+		$exception = null; $messages = [];
 
-		$exception = null;
-		$msgMethod = null;
-		if (in_array($errno,[E_USER_ERROR,E_CORE_ERROR,E_ERROR,E_PARSE,E_COMPILE_ERROR])) {
-			$msg[] = "TRACE: ".$this->getCallerInfo();
-			$exception = new \AuntieWarhol\MVCish\Exception\ServerError();
-			$msgMethod = "error";
+		try {
+			// hacky but not sure how else to do it: if you know you're tirggering us with an 
+			// exception deliberately, set handlingException so we'll use the one you already have
+			// (see "Exception\ServerWarning-trigger()")
+			if (isset($GLOBALS['MVCish_handlingException'])) {
+				$exception = $GLOBALS['MVCish_handlingException'];
+				$GLOBALS['MVCish_handlineException'] = null;
+			}
+			else {
+				$exception = \AuntieWarhol\MVCish\Exception::handlerFactory(
+					$this, $errno, $errstr, $errfile, $errline
+				);
+			}
+			$this->logExceptionMessage($exception);
+			$logged = true;
 		}
-		elseif (($errno == E_NOTICE) && (substr($errstr,0,11) == 'unserialize')) {
-			// hack to ignore this warning, because the only way to test if something is serialized
-			// is to try and unserialize it. Maybe that should use suppression operator tho?
-		}
-		else {
-			$msgMethod = "warning";
-		}
+		catch(\Throwable $e) {
+			$messages[] = "Error creating MVCish\Exception: ".$e->getMessage();
 
-		if ($msgMethod) {
+			// old fashioned way. just in case
+			$logged = false;
 			try {
-				foreach ($msg as $m) {
+				if ($this->isFatalPHPerrCode($errno)) {
+					$exception = new \Exception($errstr);
+					$this->logExceptionMessage($exception);
+					$logged = true;
+				}
+			}
+			catch(\Throwable $e) {
+				$messages[] = "Error creating Exception: ".$e->getMessage();
+			}
+		}
+
+		if (!$logged) { // old fashioned way if all else failed
+			$messages = array_merge(
+				$this->_buildErrorMessages($errno, $errstr, $errfile, $errline),
+				$messages
+			);
+			$msgMethod = $this->isFatalPHPerrCode($errno) ? 'error' : 'warning';
+			try {
+				foreach ($messages as $m) {
 					$this->log('MVCish')->$msgMethod($m);
 				}
-			} catch (\Exception $e) {
+			} catch (\Throwable $e) {
 				$msg[] = "Additional error encountered writing to MVCish log: ".$e->getMessage();
 				foreach ($msg as $m) { error_log($m); }
 			}
 		}
-		if ($exception) {
-			$this->processExceptionResponse($exception);
+
+		if ($this->isFatalPHPerrCode($errno)) {
+			if (isset($exception)) $this->processExceptionResponse($exception);
 			exit(1);
 		}
 		return true;
 	}
 
+	// usually let Environment and Exception take care of this, but for catastrophic
+	// failures where we can't get one or both of those, here's the dumb way
+	private function _buildErrorMessages($errno, $errstr, $errfile, $errline):array {
+
+		$isMVCishWarning = false;
+		$errstr = \AuntieWarhol\MVCish\MVCish::cleanMVCishWarning($errno,$errstr,$isMVCishWarning);
+
+		//hacky, but...
+		if ($isMVCishWarning) {
+			$errConst = 'E_MVCISH_WARNING';
+		}
+		else {
+			$errConst = $this->translatePHPerrCode($errno);
+		}
+
+		$messages = [];
+		$messages[] = $errConst.": $errstr"
+			.(($errConst != 'E_MVCISH_WARNING') ? "; line $errline:$errfile" : '');
+
+		if ($this->isFatalPHPerrCode($errno)) {
+			$messages[] = "TRACE: ".$this->getCallerInfo();
+		}
+		return $messages;
+	}
+
+	public static function cleanMVCishWarning(int $errno, string $errstr,bool &$wasCleaned=false):string {
+		if (($errno == E_USER_WARNING) && (substr($errstr,0,18) == 'E_MVCISH_WARNING: ')) {
+			$wasCleaned = true;
+			return substr($errstr,18);
+		}
+		return $errstr;
+	}
 
 	// CONFIG *************************
 
@@ -348,7 +402,7 @@ class MVCish {
 
 	// CONTROLLER ***************************
 
-	public function Run($controller=null,$options=[]) {
+	public function Run($controller=null,$options=[]):bool {
 		$this->options = array_replace_recursive($this->options,$options);
 		try {
 			// Authorize
@@ -375,12 +429,20 @@ class MVCish {
 		return true;
 	}
 
-	private function logExceptionMessage($e,$basemsg) {
-		$environment = $this->Environment();
-		if ($logLevel = $environment->getErrCodeLogLevel($e->getCode())) {
-			$msg = $environment->buildExceptionMessage($e,$basemsg);
-			$this->log('MVCish')->$logLevel($msg);
+	private function logExceptionMessage(\Throwable $e,string $basemsg=''):void {
+		error_log("logging ".$e->getMessage());
+		try {
+			$environment = $this->Environment();
+			if ($logLevel = $environment->getErrCodeLogLevel($e->getCode())) {
+				$msg = $environment->buildExceptionMessage($e,$basemsg);
+				$this->log('MVCish')->$logLevel($msg);
+			}
 		}
+		catch(\Throwable $e) {
+			error_log("Fatal error writing to error logs: ".$e->getMessage());
+			exit(1);
+		}
+		//error_log("exiting logException");
 	}
 
 	private function authorize() {
@@ -510,7 +572,7 @@ class MVCish {
 		//$this->log()->warning("no controller found for ".$_SERVER['REQUEST_URI']);
 	}
 
-	private function processExceptionResponse($e) {
+	private function processExceptionResponse(\Throwable $e):bool {
 		// if it's our exception (or a subclass of our exceptions),
 		// then we the exception message is the error we want to return
 		if ($e instanceof \AuntieWarhol\MVCish\Exception) {
@@ -561,7 +623,7 @@ class MVCish {
 
 	private $responseMessageTypes = ['info','success','warning','error'];
 
-	private function processResponse() {
+	private function processResponse():bool {
 		if (isset($this->options['beforeRender']) && is_callable($this->options['beforeRender'])) {
 			// if optional beforeRender hook returns false, abort
 			if (!$this->options['beforeRender']($this)) {
@@ -627,44 +689,88 @@ class MVCish {
 
 	// UTILS / MISC ***********************
 
-	public static function throwWarning($message) {
-		trigger_error('E_MVCISH_WARNING: '.$message, E_USER_WARNING);
+	public static function throwWarning(string $message,string $file=null, int $line=null):void {
+		$w = \AuntieWarhol\MVCish\Exception\ServerWarning::create($message,null,null,$file,$line);
+		$w->trigger();
 	}
 
 	public static function isCLI() {
 		return php_sapi_name() == "cli";
 	}
 
-	public static function getCallerInfo() {
-		$c = '';
-		$file = '';
-		$func = '';
-		$class = '';
+	public static function getCallerInfo(int $max=0):string {
+		return implode('; ',self::getCallerInfoStrings($max));
+	}
+
+	public static function getCallerInfoStrings(int $max=0):array {
+		$strings = [];
+		foreach(self::getRelevantCallers($max) as $t) {
+			foreach(['file','class'] as $k) { $t[$k] ??= ''; }
+			$strings[] = 
+				(empty($t['file'])     ? '' : basename($t['file']).': ').
+				(empty($t['class'])    ? '' : $t['class'].'->').
+				(empty($t['function']) ? '' : 
+					$t['function'].'('.	(empty($t['args']) ? '' :
+						implode(',',
+							array_map(function($v) {
+								if (is_object($v) && method_exists($v,'__toString')) {
+									$v = $v->__toString();
+								}
+								return 	is_string($v) ? ('"'.(strlen($v) > 7 ? substr($v,0,7).'...' : $v).'"') :
+										(is_object($v) ? '$'.get_class($v) : strtoupper(gettype($v)));
+							},$t['args'])
+						)).')');
+		}
+		return $strings;
+	}
+
+	public static function getRelevantCallers(int $max=0,\Throwable $forException=null):array {
 		$trace = debug_backtrace();
-		if (isset($trace[2])) {
-			$file = $trace[1]['file'];
-			$func = $trace[2]['function'];
-			if ((substr($func, 0, 7) == 'include') || (substr($func, 0, 7) == 'require')) {
-				$func = '';
+		array_shift($trace); // pop this call
+
+		// try to skip all the stuff what likely went into outputting the error
+
+		//$ignoreUntil = null;
+		//if (isset($forException)) {
+		//	$ignoreUntil = ['file' => $forException->getFile(), 'line' => $forException->getLine()];
+			//error_log("IE= ".$forException->getFile().' '.$forException->getLine());
+		//}
+
+		foreach ($trace as $i => $t) {
+			$skips = [];
+			if (
+				//(isset($ignoreUntil) && !(isset($t['file']) && isset($t['line']) &&
+				//	($t['file'] == $ignoreUntil['file']) && ($t['file'] == $ignoreUntil['file']))) ||
+
+				(isset($t['class']) && (($t['class'] == 'Exception') ||
+					is_subclass_of($t['class'],'Exception'))) ||
+
+				(isset($t['file']) && str_contains($t['file'],'mvcish/src/Exception')) ||
+
+				(((isset($t['class']) && ($t['class'] == 'AuntieWarhol\MVCish\MVCish')) || 
+				 (isset($t['file'])  && ($t['file'] == __FILE__))) &&
+				in_array($t['function'],['logExceptionMessage','_error_handler','trigger_error',
+					'throwWarning','getCallerInfo','getCallerInfoStrings',
+					'AuntieWarhol\MVCish\{closure}'])) ||
+				
+				((isset($t['class']) && (($t['class'] == 'AuntieWarhol\MVCish\Environment') ||
+				  is_subclass_of($t['class'],'AuntieWarhol\MVCish\Environment'))) &&
+				in_array($t['function'],['buildDefaultExceptionMessage','buildExceptionMessage']))
+			) {
+				$count = count($trace);
+				$skips[] = $trace[$i]; unset($trace[$i]);
+				//error_log('skipping '.$t['function'].' trace was '.$count.' now '.count($trace));
 			}
-		} else if (isset($trace[1])) {
-			$file = $trace[1]['file'];
-			$func = '';
+			else {
+				//error_log('keeping '.($t['file'].' ' ?? '').($t['class'] ?? '').'->'.$t['function'].' trace is '.count($trace));
+				//unset($ignoreUntil);
+				break; //once we find a keeper, keep the rest
+			}
 		}
-		if (isset($trace[3]['class'])) {
-			$class = $trace[3]['class'];
-			$func = $trace[3]['function'];
-			$file = $trace[2]['file'];
-		} else if (isset($trace[2]['class'])) {
-			$class = $trace[2]['class'];
-			$func = $trace[2]['function'];
-			$file = $trace[1]['file'];
-		}
-		if ($file != '') $file = basename($file);
-		$c = $file . ": ";
-		$c .= ($class != '') ? ":" . $class . "->" : "";
-		$c .= ($func != '') ? $func . "(): " : "";
-		return($c);
+		// just in case we emptied it out
+		if (empty($trace) && !empty($skips)) { $trace = $skips; }
+
+		return ($max > 0) ? array_slice($trace,0,$max) : $trace;
 	}
 
 	public static function translatePHPerrCode($errno) {
@@ -689,6 +795,9 @@ class MVCish {
 			default: $e_type = 'E_UNKNOWN'; break;
 		}
 		return $e_type;
+	}
+	public static function isFatalPHPerrCode($errno) {
+		return in_array($errno,[E_ERROR,E_PARSE,E_CORE_ERROR,E_COMPILE_ERROR,E_USER_ERROR]);
 	}
 
 

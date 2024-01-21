@@ -15,7 +15,7 @@ class Stage extends \AuntieWarhol\MVCish\Environment\Production {
 		$this->messageBuilder($this->getNullCode(),
 			function ($e,$basemsg):string {
 				if ($msg = parent::buildExceptionMessage($e,$basemsg)) {
-					return $msg . '; TRACE: '.$MVCish->getCallerInfo();
+					return $msg . '; TRACE: '.$MVCish->getCallerInfo(3);
 				}
 			}
 		);

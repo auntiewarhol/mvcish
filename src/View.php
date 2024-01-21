@@ -127,7 +127,6 @@ class View {
 					}
 					else {
 						$this->initialize_text();
-						header('Content-Type: text/plain; charset=utf-8');
 						echo $this->MVCish->Response['error']."\n";
 					}
 					return false;
@@ -168,7 +167,9 @@ class View {
 
 	//** text
 	public function initialize_text() {
-		header('Content-Type: text/plain; charset=utf-8');
+		if (!$this->MVCish->isCLI()) {
+			header('Content-Type: text/plain; charset=utf-8');
+		}
 	}
 	private function _renderView_text() {
 		if (is_array($this->MVCish->Response)) {

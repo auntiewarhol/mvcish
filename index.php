@@ -58,6 +58,8 @@ if ((!empty($argv[1])) && (!empty($argv[2]))) {
 		echo "assetUriFor= ".$u."\n".print_r($u->toArray(),true)."\n";
 	}
 }
-
+$MVCish->throwWarning("just a test of the warning system");
+trigger_error("and a regular dumb error",E_USER_ERROR);
+echo "still here\n";
 
 echo "bye!\n";
