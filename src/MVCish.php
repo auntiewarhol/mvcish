@@ -43,7 +43,7 @@ class MVCish {
 	}
 
 	private function _error_handler($errno, $errstr, $errfile, $errline) {
-		//error_log("error_handler ".$this->translatePHPerrCode($errno).' '.$errstr.' '.$errfile);
+		error_log("error_handler ".$this->translatePHPerrCode($errno).' '.$errstr.' '.$errfile.' '.$errline);
 		// ignore warnings when @ error suppression operator used
 		$er = error_reporting();
 		if ($er == 0 || $er == 4437) return true; //4437=php8 hack
@@ -56,7 +56,7 @@ class MVCish {
 		$exception = null; $messages = [];
 
 		try {
-			// hacky but not sure how else to do it: if you know you're tirggering us with an 
+			// hacky but not sure how else to do it: if you know you're triggering us with an 
 			// exception deliberately, set handlingException so we'll use the one you already have
 			// (see "Exception\ServerWarning-trigger()")
 			if (isset($GLOBALS['MVCish_handlingException'])) {
@@ -84,10 +84,9 @@ class MVCish {
 				}
 			}
 			catch(\Throwable $e) {
-				$messages[] = "Error creating Exception: ".$e->getMessage();
+				$messages[] = "Error creating generic Exception: ".$e->getMessage();
 			}
 		}
-
 		if (!$logged) { // old fashioned way if all else failed
 			$messages = array_merge(
 				$this->_buildErrorMessages($errno, $errstr, $errfile, $errline),
@@ -430,7 +429,7 @@ class MVCish {
 	}
 
 	private function logExceptionMessage(\Throwable $e,string $basemsg=''):void {
-		error_log("logging ".$e->getMessage());
+		//error_log("logging ".$e->getMessage());
 		try {
 			$environment = $this->Environment();
 			if ($logLevel = $environment->getErrCodeLogLevel($e->getCode())) {
@@ -698,13 +697,17 @@ class MVCish {
 		return php_sapi_name() == "cli";
 	}
 
-	public static function getCallerInfo(int $max=0):string {
-		return implode('; ',self::getCallerInfoStrings($max));
+	public static function getCallerInfo(int $max=0,array|\Throwable $trace=null):string {
+		if (is_object($trace)) {
+			$trace = method_exists($trace,'getFilteredTrace') ? $trace->getFilteredTrace() : $trace->getTrace();
+		}
+		return implode('; ',self::getCallerInfoStrings($max,$trace));
 	}
 
-	public static function getCallerInfoStrings(int $max=0):array {
+	public static function getCallerInfoStrings(int $max=0,array $trace=null):array {
 		$strings = [];
-		foreach(self::getRelevantCallers($max) as $t) {
+		$trace ??= self::getRelevantCallers($max);
+		foreach($trace as $t) {
 			foreach(['file','class'] as $k) { $t[$k] ??= ''; }
 			$strings[] = 
 				(empty($t['file'])     ? '' : basename($t['file']).': ').
@@ -725,22 +728,22 @@ class MVCish {
 	}
 
 	public static function getRelevantCallers(int $max=0,\Throwable $forException=null):array {
-		$trace = debug_backtrace();
+		$trace = isset($forException)? $forException->getTrace() : debug_backtrace();
 		array_shift($trace); // pop this call
 
 		// try to skip all the stuff what likely went into outputting the error
 
-		//$ignoreUntil = null;
-		//if (isset($forException)) {
-		//	$ignoreUntil = ['file' => $forException->getFile(), 'line' => $forException->getLine()];
+		$ignoreUntil = null;
+		if (isset($forException)) {
+			$ignoreUntil = ['file' => $forException->getFile(), 'line' => $forException->getLine()];
 			//error_log("IE= ".$forException->getFile().' '.$forException->getLine());
-		//}
+		}
 
 		foreach ($trace as $i => $t) {
 			$skips = [];
 			if (
-				//(isset($ignoreUntil) && !(isset($t['file']) && isset($t['line']) &&
-				//	($t['file'] == $ignoreUntil['file']) && ($t['file'] == $ignoreUntil['file']))) ||
+				(isset($ignoreUntil) && !(isset($t['file']) && isset($t['line']) &&
+					($t['file'] == $ignoreUntil['file']) && ($t['file'] == $ignoreUntil['file']))) ||
 
 				(isset($t['class']) && (($t['class'] == 'Exception') ||
 					is_subclass_of($t['class'],'Exception'))) ||
@@ -763,7 +766,7 @@ class MVCish {
 			}
 			else {
 				//error_log('keeping '.($t['file'].' ' ?? '').($t['class'] ?? '').'->'.$t['function'].' trace is '.count($trace));
-				//unset($ignoreUntil);
+				unset($ignoreUntil);
 				break; //once we find a keeper, keep the rest
 			}
 		}

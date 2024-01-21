@@ -7,6 +7,10 @@ $MVCish = new \AuntieWarhol\MVCish\MVCish([
 	'appConfig' => ['foo' => 'bar']
 ]);
 
+
+//trigger dumb warning
+preg_match('There will be a warning about missing delimiter here!', 'test');
+
 if ($env = $MVCish->Environment()) {
 	echo "ENV = ".$env->name()."\n";
 	echo "ENV Class = ".get_class($env)."\n";

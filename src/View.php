@@ -127,7 +127,7 @@ class View {
 					}
 					else {
 						$this->initialize_text();
-						echo $this->MVCish->Response['error']."\n";
+						echo "Exited with Error: ".$this->MVCish->Response['error']."\n";
 					}
 					return false;
 				}

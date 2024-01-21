@@ -59,39 +59,39 @@ class Exception extends \Exception {
 
 	//**********************************************************************************
 
+	// meta-constructor which wraps the actual constructor, allowing us to optionally
+	// pass in and use extra parameters
 	public static function create($message=null,$code=null, \Exception $previous = null,
-		string $file = null, int $line = null) {
+		string $file = null, int $line = null, int $errno = null) {
 		$e = new static($message,$code,$previous);
-		$e->overrideFileLine($file,$line);
+		$e->phpErrorCode($errno);
+		$e->overrideFileLineTrace($file,$line);
 		return $e;
 	}
-	
 	public function __construct($message=null,$code=null, \Exception $previous = null) {
 		parent::__construct($message, $code, $previous);
-		// override File and Line with better info (tries to eliminate 
-		// "thrown from the place that throws everything"-junk)
-		if ($trace = $this->getFilteredTrace(1)) {
-			if (isset($trace[0]['file'])) {
-				$this->overrideFileLine($trace[0]['file'],$trace[0]['line']);
-			}
-		}
+	}
+	//**********************************************************************************
 
-	}
-	private array $trace;
-	public function getFilteredTrace(int $max=0,bool $reset=false):array {
-		if ($reset || !isset($this->trace)) {
-			$this->trace = \AuntieWarhol\MVCish\MVCish::getRelevantCallers($max,$this);
+	private array $filteredTrace;
+	public function getFilteredTrace(bool $reset=false):array {
+		if ($reset || !isset($this->filteredTrace)) {
+			$this->filteredTrace = \AuntieWarhol\MVCish\MVCish::getRelevantCallers(0,$this);
 		}
-		return $this->trace;
+		return $this->filteredTrace;
 	}
-	public function overrideFileLine(string $file=null,$line=null):bool {
+	public function overrideFileLineTrace(string $file=null,$line=null):void {
 		if (isset($file)) {
 			$this->file = $file;
 			$this->line = isset($line) ? $line : null;
-			$this->getFilteredTrace(0,true);
-			return true;
+			$this->getFilteredTrace(true);
 		}
-		return false;
+		elseif ($trace = $this->getFilteredTrace(true)) {
+			if (isset($trace[0]) && isset($trace[0]['file'])) {
+				$this->file = $trace[0]['file'];
+				$this->line = $trace[0]['line'];
+			}
+		}
 	}
 
 
@@ -101,8 +101,8 @@ class Exception extends \Exception {
 		$errstr = \AuntieWarhol\MVCish\MVCish::cleanMVCishWarning($errno,$errstr);
 
 		$e = $MVCish->isFatalPHPerrCode($errno) ?
-			\AuntieWarhol\MVCish\Exception\ServerError::create($errstr,$errno,null,$errfile,$errline):
-			\AuntieWarhol\MVCish\Exception\ServerWarning::create($errstr,$errno,null,$errfile,$errline);
+			\AuntieWarhol\MVCish\Exception\ServerError::create($errstr,null,null,$errfile,$errline,$errno):
+			\AuntieWarhol\MVCish\Exception\ServerWarning::create($errstr,null,null,$errfile,$errline,$errno);
 
 		$e->phpErrorCode($errno);
 		return $e;

@@ -191,8 +191,9 @@ class Environment extends \AuntieWarhol\MVCish\Base {
 	public function getErrCodeLogLevel($errCode):?string {
 		$errCode ?? $this->getNullCode();
 		return (array_key_exists($errCode,$this->errCodeLogLevels)) ?
-			$this->errCodeLogLevels[$errCode] : null;
+			$this->errCodeLogLevels[$errCode] : $this->getDefaultLogLevel();
 	}
+	public function getDefaultLogLevel() { return $this->defaultLogLevel; }
 
 	private array $messageBuilders = [];
 	public function messageBuilder(string $errCode,callable $new=null):?callable {
