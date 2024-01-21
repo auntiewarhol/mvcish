@@ -43,7 +43,7 @@ class MVCish {
 	}
 
 	private function _error_handler($errno, $errstr, $errfile, $errline) {
-		error_log("error_handler ".$this->translatePHPerrCode($errno).' '.$errstr.' '.$errfile.' '.$errline);
+		//error_log("error_handler ".$this->translatePHPerrCode($errno).' '.$errstr.' '.$errfile.' '.$errline);
 		// ignore warnings when @ error suppression operator used
 		$er = error_reporting();
 		if ($er == 0 || $er == 4437) return true; //4437=php8 hack
