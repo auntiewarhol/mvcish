@@ -208,7 +208,7 @@ class Environment extends \AuntieWarhol\MVCish\Base {
 		// will only be set if exception was created by our php error handler
 		$code = $this->getPHPorStatusCode($e) ?: '';
 		$msg  = $e->getMessage() ?: '';
-		return (empty($basemsg) ? '' : $basemesg.' ')
+		return (empty($basemsg) ? '' : $basemsg.' ')
 			.(empty($code) ? '' : $code.': ')
 			.$msg .' ('.$e->getFile().': '.$e->getLine().')';
 	}
