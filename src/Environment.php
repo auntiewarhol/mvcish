@@ -142,10 +142,12 @@ class Environment extends \AuntieWarhol\MVCish\Base {
 
 		// we are in this root class
 		if ($this->isRootClass()) {
+			//error_log("getAppConfig Root");
 			return $this->processAppConfigFile();
 		}
 		// we are in a child class
 		else{
+			//error_log("getAppConfig Child ".static::class);
 			return array_replace(
 				$this->parentObject()->getAppConfig(),
 				$this->processAppConfigFile());

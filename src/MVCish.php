@@ -308,7 +308,7 @@ class MVCish {
 			$this->_findOrCreateChildDirectory(
 				$this->getAppDirectory(),'config','appConfigDirectory');
 		}
-		return $this->runtimeDirectory;
+		return $this->appConfigDirectory;
 	}
 
 	// option or default
@@ -698,15 +698,19 @@ class MVCish {
 	}
 
 	public static function getCallerInfo(int $max=0,array|\Throwable $trace=null):string {
-		if (is_object($trace)) {
-			$trace = method_exists($trace,'getFilteredTrace') ? $trace->getFilteredTrace() : $trace->getTrace();
+		if (is_object($trace) && method_exists($trace,'getFilteredTrace')) {
+			$trace = $trace->getFilteredTrace();
 		}
 		return implode('; ',self::getCallerInfoStrings($max,$trace));
 	}
 
 	public static function getCallerInfoStrings(int $max=0,array $trace=null):array {
-		$strings = [];
+		if (is_object($trace)) {
+			$trace = self::getRelevantCallers($max,$trace);
+		}
 		$trace ??= self::getRelevantCallers($max);
+
+		$strings = [];
 		foreach($trace as $t) {
 			foreach(['file','class'] as $k) { $t[$k] ??= ''; }
 			$strings[] = 

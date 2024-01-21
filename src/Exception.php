@@ -68,9 +68,11 @@ class Exception extends \Exception {
 		$e->overrideFileLineTrace($file,$line);
 		return $e;
 	}
-	public function __construct($message=null,$code=null, \Exception $previous = null) {
-		parent::__construct($message, $code, $previous);
-	}
+	//public function __construct($message=null,$code=null, \Exception $previous = null) {
+	//	parent::__construct($message, $code, $previous);
+	//	error_log("original trace=".\AuntieWarhol\MVCish\MVCish::getCallerInfo(0,$this->getTrace()));
+	//	error_log("filtered trace1=".\AuntieWarhol\MVCish\MVCish::getCallerInfo(0,$this->getFilteredTrace()));
+	//}
 	//**********************************************************************************
 
 	private array $filteredTrace;
@@ -92,6 +94,7 @@ class Exception extends \Exception {
 				$this->line = $trace[0]['line'];
 			}
 		}
+		//error_log("filtered trace2=".\AuntieWarhol\MVCish\MVCish::getCallerInfo(0,$this->getFilteredTrace()));
 	}
 
 
