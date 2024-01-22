@@ -186,11 +186,13 @@ class Debug extends \AuntieWarhol\MVCish\Base {
 				(isset($ignoreUntil) && !(isset($t['file']) && isset($t['line']) &&
 					($t['file'] == $ignoreUntil['file']) && ($t['file'] == $ignoreUntil['file']))) ||
 
+				(isset($t['class']) && (($t['class'] == 'AuntieWarhol\MVCish\Debug') ||
+				(isset($t['file']) && str_contains($t['file'],'mvcish/src/Debug')) ||
+
 				(isset($t['class']) && (($t['class'] == 'Exception') ||
 					is_subclass_of($t['class'],'Exception'))) ||
 
 				(isset($t['file']) && str_contains($t['file'],'mvcish/src/Exception')) ||
-				(isset($t['file']) && str_contains($t['file'],'mvcish/src/Debug')) ||
 
 				(((isset($t['class']) && ($t['class'] == 'AuntieWarhol\MVCish\MVCish')) || 
 				 (isset($t['file'])  && ($t['file'] == __FILE__))) &&
