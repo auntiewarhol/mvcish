@@ -36,6 +36,15 @@ class MVCish {
 		}
 	}
 
+	// enforce no-dynamic-properties
+	public function __set($name, $value) {
+		Exception\ServerWarning::throwWarning('Attempt to set undefined property: '
+			.static::class.'->'.$name);
+	}
+	public function __get($name) {
+		Exception\ServerWarning::throwWarning('Attempt to read undefined property: '
+			.static::class.'->'.$name);
+	}
 
 	// ***************************************************************
 	// CONFIGURATION *************************
