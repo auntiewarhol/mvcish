@@ -53,7 +53,7 @@ class MVCish {
 	// 	(the params you passed in construction)
 
 	private array $_options = [];
-	public function Options(string $key=null,string $new=null) {
+	public function Options(string $key=null,$set=null) {
 		if (isset($key)) {
 			if (isset($set)) $this->_options[$key] = $set;
 			return array_key_exists($key,$this->_options) ?
@@ -61,7 +61,7 @@ class MVCish {
 		}
 		return $this->_options;
 	}
-	private function setOptions(array $new=null,bool$merge=false):void {
+	private function setOptions(array $new=null,bool $merge=false):void {
 		$this->_options = $merge ? 
 			array_replace_recursive($this->_options,$new ?? []) : $new;
 	}
