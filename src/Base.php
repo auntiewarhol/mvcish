@@ -15,11 +15,11 @@ abstract class Base {
 		unset($this->_MVCish);
 		unset($this->_parentObject);
 	}
-	protected function MVCish(): \AuntieWarhol\MVCish\MVCish {
+	public function MVCish(): \AuntieWarhol\MVCish\MVCish {
 		return $this->_MVCish;
 	}
 
-	protected function parentObject(self $new = null):?self {
+	public function parentObject(self $new = null):?self {
 
 		if (isset($new)) $this->_parentObject = $new;
 
