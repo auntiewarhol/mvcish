@@ -3,7 +3,7 @@ namespace AuntieWarhol\MVCish\Util;
 use Symfony\Polyfill\Intl\Idn;
 
 
-class Validator extends \AuntieWahol\MVCish\Base {
+class Validator extends \AuntieWarhol\MVCish\Base {
 
 	/* pass no args, get the validators hash;
 		pass one arg, get the validator of that name;
