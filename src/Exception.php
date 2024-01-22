@@ -62,9 +62,11 @@ class Exception extends \Exception {
 	// meta-constructor which wraps the actual constructor, allowing us to optionally
 	// pass in and use extra parameters
 	public static function create($message=null,$code=null, \Exception $previous = null,
-		string $file = null, int $line = null, int $errno = null) {
+		string $file = null, int $line = null, int $errno = null, array $trace = null) {
+		$trace ??= debug_backtrace();
 		$e = new static($message,$code,$previous);
 		$e->phpErrorCode($errno);
+		$e->getOverrideTrace($trace);
 		$e->overrideFileLineTrace($file,$line);
 		return $e;
 	}
@@ -75,12 +77,21 @@ class Exception extends \Exception {
 	//}
 	//**********************************************************************************
 
+	// unfortunately 'trace' on the parent object is private, unlike file and line,
+	// so we can't easily override it. Just keep track of our own versions and try
+	// to use them instead when needed.
+
+	private array $overrideTrace;
 	private array $filteredTrace;
 	public function getFilteredTrace(bool $reset=false):array {
 		if ($reset || !isset($this->filteredTrace)) {
 			$this->filteredTrace = Debug::getFilteredTrace(0,$this);
 		}
 		return $this->filteredTrace;
+	}
+	public function getOverrideTrace(array $set=null):array {
+		if (isset($set)) $this->overrideTrace = $set;
+		return $this->overrideTrace ?? $this->getTrace();
 	}
 	public function overrideFileLineTrace(string $file=null,$line=null):void {
 		if (isset($file)) {

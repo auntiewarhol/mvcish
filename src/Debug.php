@@ -169,7 +169,8 @@ class Debug extends \AuntieWarhol\MVCish\Base {
 
 		$ignoreUntil = null;
 		if (isset($forException)) {
-			$trace = $forException->getTrace();
+			$trace = method_exists($forException,'getOverrideTrace') ?
+				$forException->getOverrideTrace() : $forException->getTrace();
 			$ignoreUntil = ['file' => $forException->getFile(), 'line' => $forException->getLine()];
 			//error_log("IE= ".$forException->getFile().' '.$forException->getLine());
 		}

@@ -2,8 +2,13 @@
 namespace AuntieWarhol\MVCish\Exception;
 class ServerWarning extends \AuntieWarhol\MVCish\Exception {
 
-	public static function throwWarning(string $message,string $file=null, int $line=null):void {
-		$w = self::create($message,null,null,$file,$line);
+	public static function throwWarning(string $message,string $file=null, int $line=null, array $trace=null):void {
+		$trace ??= \AuntieWarhol\MVCish\Debug::getFilteredTrace();
+		if (isset($trace[0]) && isset($trace[0]['file']) && !isset($file)) {
+			$file = $trace[0]['file'];
+			$line = $trace[0]['line'] ?? null;
+		}
+		$w = self::create($message,null,null,$file,$line,E_USER_WARNING,$trace);
 		$w->trigger();
 	}
 
@@ -16,6 +21,7 @@ class ServerWarning extends \AuntieWarhol\MVCish\Exception {
 	}
 
 	public function trigger() {
+		//hacky, but...
 		$GLOBALS['MVCish_handlingException'] = $this;
 		trigger_error('E_MVCISH_WARNING: '.$this->getMessage(), E_USER_WARNING);
 		$GLOBALS['MVCish_handlingException'] = null;

@@ -533,7 +533,8 @@ class MVCish {
 			$code = $e->getCode();
 			$this->setResponse(['success' => false,
 				'code'       => $e->getCode(),
-				"error"      => ($code == Exception::SERVER_ERROR ? Exception::serverError : $e->getMessage()),
+				"error"      => (($code == Exception::SERVER_ERROR) && !$this->isCLI()) ?
+					Exception::serverError : $e->getMessage(),
 				'messages'   => ['error' => $e->getMessage()],
 				'statusText' => $e->statusText()
 			]);
