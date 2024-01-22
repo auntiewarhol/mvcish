@@ -21,7 +21,12 @@ abstract class Base {
 
 	// enforce no-dynamic-properties
 	public function __set($name, $value) {
-		Exception\ServerWarning::throwWarning('Undefined property: '.static::class.'->'.$name);
+		Exception\ServerWarning::throwWarning('Attempt to set undefined property: '
+			.static::class.'->'.$name);
+	}
+	public function __get($name) {
+		Exception\ServerWarning::throwWarning('Attempt to read undefined property: '
+			.static::class.'->'.$name);
 	}
 
 	public function parentObject(self $new = null):?self {

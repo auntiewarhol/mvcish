@@ -64,6 +64,12 @@ if ((!empty($argv[1])) && (!empty($argv[2]))) {
 		echo "assetUriFor= ".$u."\n".print_r($u->toArray(),true)."\n";
 	}
 }
+
+if ($view = $MVCish->View()) {
+	$view->setIllegalProp = true;
+	$view->setIllegalPropSneaky[] = true;
+}
+
 \AuntieWarhol\MVCish\Exception\ServerWarning::throwWarning("test the warning system");
 trigger_error("and a regular dumb error",E_USER_ERROR);
 echo "still here\n";
