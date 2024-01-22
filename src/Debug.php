@@ -161,15 +161,21 @@ class Debug extends \AuntieWarhol\MVCish\Base {
 	}
 
 	public static function getFilteredTrace(int $max=0,\Throwable $forException=null):array {
-		$trace = isset($forException)? $forException->getTrace() : debug_backtrace();
-		array_shift($trace); // pop this call
-
-		// try to skip all the stuff what likely went into outputting the error
+		// try to skip all the stuff what likely went into outputting the error.
+		// it's best to try and capture the trace as soon as you can and pass it in,
+		// either as an array, or if you're passing us an Exception then it's already stored.
+		// If you don't pass in, we'll get it. But the sooner you capture it, the less junk
+		// will have to be filtered, and more good info should remain.
 
 		$ignoreUntil = null;
 		if (isset($forException)) {
+			$trace = $forException->getTrace();
 			$ignoreUntil = ['file' => $forException->getFile(), 'line' => $forException->getLine()];
 			//error_log("IE= ".$forException->getFile().' '.$forException->getLine());
+		}
+		else {
+			$trace = debug_backtrace();
+			array_shift($trace); // pop this call
 		}
 
 		foreach ($trace as $i => $t) {
