@@ -13,6 +13,11 @@ class DomainParser extends \AuntieWarhol\MVCish\Base {
 	// wrapper around php-domain-parser, to handle the caching of the public list using
 	// the application's runtime directory, and to abstract away some formalities
 
+	private array $_lists;
+	private array $_files;
+	private array $_fromPathClass;
+	private array $_URI;
+
 	public function __construct(\AuntieWarhol\MVCish\MVCish $MVCish) {
 		parent::__construct($MVCish);
 

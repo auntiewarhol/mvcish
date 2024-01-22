@@ -519,11 +519,12 @@ class MVCish {
 
 	public function processExceptionResponse(\Throwable $e):bool {
 		// if it's our exception (or a subclass of our exceptions),
-		// then the exception message is the error we want to return
+		// then return exception message unless it's a 500 server error
 		if ($e instanceof \AuntieWarhol\MVCish\Exception) {
+			$code = $e->getCode();
 			$this->setResponse(['success' => false,
 				'code'       => $e->getCode(),
-				"error"      => $e->getMessage(),
+				"error"      => ($code == Exception::SERVER_ERROR ? Exception::serverError : $e->getMessage()),
 				'messages'   => ['error' => $e->getMessage()],
 				'statusText' => $e->statusText()
 			]);

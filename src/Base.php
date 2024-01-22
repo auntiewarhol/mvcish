@@ -19,6 +19,11 @@ abstract class Base {
 		return $this->_MVCish;
 	}
 
+	// enforce no-dynamic-properties
+	public function __set($name, $value) {
+		Exception\ServerWarning::throwWarning('Undefined property: '.static::class.'->'.$name);
+	}
+
 	public function parentObject(self $new = null):?self {
 
 		if (isset($new)) $this->_parentObject = $new;
