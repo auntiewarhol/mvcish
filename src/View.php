@@ -42,12 +42,9 @@ class View extends Base {
 
 			} elseif (
 				($optViewName = $this->MVCish()->Options('view')) &&
-				($optView =
-					(isset($this->_views[$optViewName]) ? $this->_views[$optViewName] :
-						(isset($this->_views[strtolower($optViewName)]) ?
-							$this->_views[strtolower($optViewName)] : null)))
+				isset($this->_views[strtolower($optViewName)])
 			) {
-				$this->_view = $optView;
+				$this->_view = strtolower($optViewName);
 
 			} elseif (isset($_REQUEST['view']) &&
 				isset($this->_views[strtolower($_REQUEST['view'])])
