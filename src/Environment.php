@@ -224,7 +224,7 @@ class Environment extends \AuntieWarhol\MVCish\Base {
 	// "undeliverable" instead of "broken", eg 404s, etc.
 	// Not called directly, but we call from the builder functions
 	// defined above for those codes. Of course subclasses can override.
-	public function buildNotDeliverableMessage(Throwable $e,string $basemsg):string {
+	public function buildNotDeliverableMessage(\Throwable $e,string $basemsg):string {
 		// ignore basemsg & getMessage
 		$code = $e->getCode()    ?: '';
 		return "$code: ".$_SERVER['REQUEST_URI']
