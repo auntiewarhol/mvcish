@@ -127,6 +127,7 @@ class Debug extends \AuntieWarhol\MVCish\Base {
 
 
 	public static function getTraceString(int $max=0,array|\Throwable $trace=null):string {
+		$trace ??= debug_backtrace();
 		return implode('; ',self::getTraceStrings($max,$trace));
 	}
 
@@ -189,6 +190,7 @@ class Debug extends \AuntieWarhol\MVCish\Base {
 					is_subclass_of($t['class'],'Exception'))) ||
 
 				(isset($t['file']) && str_contains($t['file'],'mvcish/src/Exception')) ||
+				(isset($t['file']) && str_contains($t['file'],'mvcish/src/Debug')) ||
 
 				(((isset($t['class']) && ($t['class'] == 'AuntieWarhol\MVCish\MVCish')) || 
 				 (isset($t['file'])  && ($t['file'] == __FILE__))) &&
