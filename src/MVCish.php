@@ -438,11 +438,11 @@ class MVCish {
 		if ((!empty($controller)) || ($controller = $this->getUrlController())) {
 
 			if (is_callable($controller)) {
-				$this->Response(Response::factory($controller($this)));
+				$this->Response(Response::factory($this,$controller($this)));
 			}
 			elseif (is_string($controller)) {
 				$self = $this;
-				$this->Response(Response::factory(include($controller)));
+				$this->Response(Response::factory($this,include($controller)));
 			}
 		}
 	}
