@@ -229,7 +229,7 @@ class Response extends Base {
 	public static function factory(\AuntieWarhol\MVCish\MVCish $MVCish,mixed $cResponse=null):self {
 
 		// oh hai look at you sexy controller sending us a proper object already
-		if (is_a($cResponse,self)) return $cResponse;
+		if (is_a($cResponse,static::class)) return $cResponse;
 
 		// either a parseable bool string or literal text response
 		if (is_string($cResponse)) return self::fromString($MVCish,$cResponse);
