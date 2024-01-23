@@ -67,7 +67,7 @@ class View extends Base {
 		if ($this->view() == 'html') return true;
 
 		// only if redirecting in json
-		if ($this->MVCish()->Response('redirect')) {
+		if ($this->MVCish()->Response()->hasRedirect()) {
 			return true;
 		}
 		return false;
@@ -75,8 +75,8 @@ class View extends Base {
 
 	public function renderError() {
 		$MVCish = $this->MVCish();
-		if ($respCode = $MVCish->Response('code')) {
-			$error = $MVCish->Response('error');
+		if ($respCode = $MVCish->Response()->code()) {
+			$error = $MVCish->Response()->error();
 
 			if (ini_get('output_buffering')) {
 				ob_clean();// in case we were mid-render
@@ -85,7 +85,7 @@ class View extends Base {
 
 			if (in_array($respCode,[500,401,403,404])) {
 
-				if ($redirect = $MVCish->Response('redirect')) {
+				if ($redirect = $MVCish->Response()->redirect()) {
 					// flash messages if redirecting
 					$MVCish->processMessages();
 				}
@@ -128,11 +128,11 @@ class View extends Base {
 	public function renderView() {
 
 		// add any headers indicated by the response
-		if ($headers = $this->MVCish()->Response('Headers')) {
+		if ($headers = $this->MVCish()->Response()->headers()) {
 			foreach($headers as $header) {
 				header($header);
 			}
-			$this->MVCish()->Response('Headers',null,true);
+			$this->MVCish()->Response()->headers(null,[]);
 		}
 
 		// now render according to the current view
@@ -151,8 +151,8 @@ class View extends Base {
 		}
 	}
 	private function _renderView_text() {
-		if ($body = $this->MVCish()->Response('Body')) {
-			echo $body;
+		if ($this->MVCish()->Response()->hasBody()) {
+			echo $this->MVCish()->Response()->body();
 			return true;
 		}
 	}
@@ -163,7 +163,7 @@ class View extends Base {
 	}
 	private function _renderView_json() {
 		// flash messages only if we're telling the client to redirect
-		if ($this->MVCish()->Response('redirect')) {
+		if ($this->MVCish()->Response()->hasRedirect()) {
 			$this->MVCish()->processMessages();
 		}
 		$this->initialize_json();
@@ -174,7 +174,7 @@ class View extends Base {
 	//** xml
 	private function _renderView_xml() {
 		header('Content-Type: text/xml');
-		if ($body = $this->MVCish()->Response('Body')) {
+		if ($body = $this->MVCish()->Response()->body()) {
 
 			// Can send a pre-produced Body
 			echo $body;
@@ -198,12 +198,12 @@ class View extends Base {
 			header('Content-Transfer-Encoding: binary');
 		}
 
-		if ($filename = $this->MVCish()->Response('filename')) {
+		if ($filename = $this->MVCish()->Response()->filename()) {
 			$filename = str_replace('"','_',$filename);
 			header('Content-Disposition: attachment; filename="'.$filename.'"');
 		}
 
-		if ($stream = $this->MVCish()->Response('streamHandle')) {
+		if ($stream = $this->MVCish()->Response()->streamHandle()) {
 			ob_end_flush();
 			ob_implicit_flush();
 			while (!feof($stream)) {
@@ -216,8 +216,10 @@ class View extends Base {
 
 
 	//** csv/excel
+	private $defaultDownloadCSVFilename = 'download.csv';
+
 	private function _renderView_csv($contentType=null) {
-		// controller should set Response['filename'] and Response['rows'];
+		// controller should set Response->filename() and Response->rows();
 		// 
 		// may also specify Response['rowCallback'] to specify a handler
 		// to process/manipulate each row, returning an array
@@ -225,13 +227,13 @@ class View extends Base {
 		if (empty($contentType)) $contentType = 'text/csv';
 		header("Content-Type: $contentType");
 
-		$filename =	$this->MVCish()->Response('filename') ?? 'download.csv';
+		$filename =	$this->MVCish()->Response()->filename() ?? $this->defaultDownloadCSVFilename;
 		$filename = str_replace('"','_',$filename);
 		header('Content-Disposition: attachment; filename="'.$filename.'"');
 
-		if ($rows = $this->MVCish()->Response('rows')) {
+		if ($rows = $this->MVCish()->Response->rows()) {
 
-			$callback =	(($cb = $this->MVCish()->Response('rowCallback')) &&
+			$callback =	(($cb = $this->MVCish()->Response()->rowCallback()) &&
 				is_callable($cb)) ? $cb : null;
 
 			foreach ($rows as $row) {
@@ -258,33 +260,29 @@ class View extends Base {
 		$this->MVCish()->processMessages();
 
 		$response = $this->MVCish()->Response();
-		if (is_object($response) && is_callable([$response,'toArray'])) {
-			$response = $response->toArray();
-		}
 		$this->addHeaders();
 
 		$options = $this->MVCish()->Options();
-		if (is_array($response)) {
-			if ($_SERVER['REQUEST_METHOD'] === 'POST' && (!empty($response['success'])) &&
-				empty($response['no_post_redirect'])
-			) {
-				$uri = isset($options['post_redirect_uri']) ? $options['post_redirect_uri'] :
-					(isset($response['redirect']) ?	$response['redirect'] : $_SERVER['REQUEST_URI']);
 
-				if (isset($response['redirect_params'])) {
-					$uri = $this->MVCish()->uriFor($uri,$response['redirect_params']);
-				}
-				return $this->MVCish()->redirect($uri,303);
+		if (($_SERVER['REQUEST_METHOD'] === 'POST') &&
+			$response->success() && !$response->noPostRedirect()
+		) {
+			$uri = isset($options['post_redirect_uri']) ? $options['post_redirect_uri'] :
+				($response->redirect() ?? $_SERVER['REQUEST_URI']);
+
+			if ($redirectParams = $response->redirectParams()) {
+				$uri = $this->MVCish()->uriFor($uri,$redirectParams);
 			}
-			elseif(array_key_exists('redirect',$response) && isset($response['redirect'])) {
-				return $this->MVCish()->redirect($response['redirect']);
-			}
-			elseif (isset($response['Body'])) {
-				// body was provided, just print it, whatever it is.
-				// presumes you've also sent whatever Headers you need.
-				echo $response['Body'];
-				return true;
-			}
+			return $this->MVCish()->redirect($uri,303);
+		}
+		elseif ($redirect = $response->redirect()) {
+			return $this->MVCish()->redirect($redirect);
+		}
+		elseif ($response->hasBody()) {
+			// body was provided, just print it, whatever it is.
+			// presumes you've also sent whatever Headers you need.
+			echo $response->body();
+			return true;
 		}
 
 		// still here, render template

@@ -435,29 +435,15 @@ class MVCish {
 			and ran it. Otherwise, the url took you directly to a php file as
 			usual, and that file ran us, passing the 'controller' as a closure:
 		*/
-
 		if ((!empty($controller)) || ($controller = $this->getUrlController())) {
 
-			$response = null;
 			if (is_callable($controller)) {
-				$response = $controller($this);
+				$this->Response(Response::factory($controller($this)));
 			}
 			elseif (is_string($controller)) {
 				$self = $this;
-				$response = include($controller);
+				$this->Response(Response::factory(include($controller)));
 			}
-
-			// otherwise we'll take any evaluates-true response you send.
-			// for example other than the typical array, you might send an object
-			// that can serialize itself for the json view.
-			// if the view can't handle your response, that's on you.
-
-			if (!empty($response)) {
-				$this->setResponse($response);
-				//$this->log('MVCish')->debug("Controller Response: ".json_encode($this->Response(),true));
-			}
-			// if controller ran but didn't send any response,
-			// assume all is well and use the default response.
 		}
 	}
 
@@ -531,13 +517,14 @@ class MVCish {
 		// then return exception message unless it's a 500 server error
 		if ($e instanceof \AuntieWarhol\MVCish\Exception) {
 			$code = $e->getCode();
-			$this->setResponse(['success' => false,
+			$this->Response(Response::fromArray([
+				'success' => false,
 				'code'       => $e->getCode(),
 				"error"      => (($code == Exception::SERVER_ERROR) && !$this->isCLI()) ?
 					Exception::serverError : $e->getMessage(),
 				'messages'   => ['error' => $e->getMessage()],
 				'statusText' => $e->statusText()
-			]);
+			]));
 			// custom method on our Exceptions to tell us if/where we should redirect
 			if ($redirect = $e->getRedirectUrl()) {
 
@@ -561,17 +548,18 @@ class MVCish {
 					}
 				}
 				// otherwise, or if didn't find controller above, do server redirect
-				$this->Response('redirect',$redirect);
+				$this->Response()->redirect($redirect);
 			}
 		}
 		// any other/unexpected exceptions return generic server error
 		else {
-			$this->setResponse(['success' => false,
+			$this->Response(Response::fromArray([
+				'success' => false,
 				'code'     => Exception::SERVER_ERROR,
 				"error"    => Exception::serverError,
 				'messages' => ['error' => Exception::serverError],
 				'statusText' => Exception::serverError
-			]);
+			]));
 		}
 		return $this->processResponse();
 	}
@@ -587,8 +575,7 @@ class MVCish {
 		// skip if controller flags that it already did the work
 		if ($this->Options('rendered')) return true;
 
-		$resp = $this->Response();
-		if (is_array($resp) && !$this->Response('success')) {
+		if (!$this->Response()->success()) {
 			// render any non-sucess as Error
 			return $this->View()->renderError();
 		}
@@ -598,7 +585,7 @@ class MVCish {
 
 	public function processMessages() {
 		//array-ify any scalar messages and flash-display/store them
-		if ($messages = $this->Response('messages')) {
+		if ($messages = $this->Response()->messages()) {
 			foreach($this->responseMessageTypes AS $mtype) {
 				if (isset($messages[$mtype])) {
 					if (!is_array($messages[$mtype])) {
@@ -609,31 +596,31 @@ class MVCish {
 					}
 				}
 			}
-			$this->Response('messages',$messages);
+			$this->Response()->messages($messages);
 		}
 	}
+
 
 
 	// RESPONSE ***************************************************************
 	
-	public $_response = ['success' => true]; //assume success
-	public function Response(string $key=null,$set=null,bool $delete=false) {
-		if (isset($key)) {
-			//prolly should warn or something but I'm replacing this anyway
-			if (!is_array($this->_response)) return null;
-
-			if ($delete) $set = null;
-			if ($delete || isset($set)) $this->_response[$key] = $set;
-			return array_key_exists($key,$this->_response) ?
-				$this->_response[$key] : null;
+	private $_response;
+	public function Response(Response|string $setKey=null,$set=null) {
+		// send a Response object and we become a setter
+		if (isset($setKey) && is_a($setKey,'AuntieWarhol\MVCish\Response')) {
+			$this->_response = $setKey;
+		}
+		// we will always have a Response, tho the above might replace it
+		elseif (!$this->_response) {
+			$this->_response = new Response($this);
+		}
+		// send string key [& optionally $set] and we become convienience method
+		if (isset($setKey) && is_string($setKey)) {
+			return $this->_response->data($setKey,$set);
 		}
 		return $this->_response;
 	}
 
-	private function setResponse($response):void {
-		if (is_bool($response)) $response = ['success' => $response];
-		$this->_response = $response;
-	}
 
 
 	// AUTH *******************************************************************

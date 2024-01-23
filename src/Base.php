@@ -64,5 +64,53 @@ abstract class Base {
 	protected function isRootClass():bool {
 		return get_parent_class($this) === 'AuntieWarhol\MVCish\Base';
 	}
+
+
+	// we don't want magic method accessors, but you can use these to
+	// do the repititve work in your accessors, eg:
+	//
+	//	private int $code;
+	//	public function code(int $set=null):?int {
+	//		return $this->getSetScalar($set,'code');
+	//	}
+	//	private array $data = [];
+	//	public function data(string $key=null,$set=null,$setAll=null) {
+	//		return $this->getSetArray($key,$set,$setAll,'data');
+	//	}
+	//
+	// will auto warn/err if you haven't defined $prop
+	// we don't check type on Scalar, so you should.
+
+	private function getSetScalar($set=null,string $prop) {
+		if (isset($set)) $this->$prop = $set;
+		return $this->$prop;
+	}
+	protected function getSetArray(string $key=null,$set=null,array $setAll=null,string $prop) {
+		if (isset($setAll)) {
+			$this->$prop = $setAll;
+		}
+		else if (isset($key)) {
+			if (isset($set)) $this->$prop = $key;
+			return $this->$prop[$key];
+		}
+		return $this->$prop;
+	}
+	protected function getPushArray($set=null,array $setAll=null,string $prop) {
+		if (isset($setAll)) {
+			$this->$prop = $setAll;
+		}
+		else if (isset($set)) {
+			$this->$prop[] = $set;
+		}
+		return $this->$prop;
+	}
+
+
+	//****************************************************************************
+	// Misc utils & conveniences
+
+	public static function parseBool(string $string,callable $callback=null) {
+		return filter_var($success,FILTER_VALIDATE_BOOLEAN,FILTER_NULL_ON_FAILURE); 
+	}
 }
 ?>

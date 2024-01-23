@@ -75,13 +75,13 @@ class Render extends \AuntieWarhol\MVCish\Base {
 	final public function Environment() {
 		return $this->MVCish()->Environment();
 	}
-	final public function Config($k=null) {
+	final public function Config(string $k=null) {
 		return $this->MVCish()->Config($k);
 	}
-	final public function Options($k=null) {
+	final public function Options(string $k=null) {
 		return $this->MVCish()->Options($k);
 	}
-	final public function Response($k=null) {
+	final public function Response(string $k=null) {
 		return $this->MVCish()->Response($k);
 	}
 	final public function Auth() {
