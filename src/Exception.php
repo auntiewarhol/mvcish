@@ -63,18 +63,21 @@ class Exception extends \Exception {
 	// pass in and use extra parameters
 	public static function create($message=null,$code=null, \Exception $previous = null,
 		string $file = null, int $line = null, int $errno = null, array $trace = null) {
-		$trace ??= debug_backtrace();
+		if (!isset($trace)) { $trace = debug_backtrace(); array_shift($trace); }
+
 		$e = new static($message,$code,$previous);
 		$e->phpErrorCode($errno);
 		$e->getOverrideTrace($trace);
 		$e->overrideFileLineTrace($file,$line);
 		return $e;
 	}
-	//public function __construct($message=null,$code=null, \Exception $previous = null) {
-	//	parent::__construct($message, $code, $previous);
-	//	error_log("original trace=".Debug::getTraceString(0,$this->getTrace()));
-	//	error_log("filtered trace1="Debug::getTraceString(0,$this->getFilteredTrace()));
-	//}
+	public function __construct($message=null,$code=null, \Exception $previous = null) {
+		parent::__construct($message, $code, $previous);
+		if (!isset($this->overrideTrace)) {
+			$trace = debug_backtrace(); array_shift($trace);
+			$this->getOverrideTrace($trace);
+		}
+	}
 	//**********************************************************************************
 
 	// unfortunately 'trace' on the parent object is private, unlike file and line,
@@ -131,6 +134,9 @@ class Exception extends \Exception {
 			return substr($errstr,strlen(self::WARNING_PREFIX));
 		}
 		return $errstr;
+	}
+	public static function isWarningPrefixed(string $str):bool {
+		return str_starts_with($str, self::WARNING_PREFIX);
 	}
 }
 

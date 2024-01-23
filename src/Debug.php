@@ -3,7 +3,7 @@ namespace AuntieWarhol\MVCish;
 
 class Debug extends \AuntieWarhol\MVCish\Base {
 
-	public static function errorHandler($MVCish,$errno, $errstr, $errfile, $errline) {
+	public static function errorHandler($MVCish,$errno, $errstr, $errfile, $errline, \Throwable $exception=null) {
 		//error_log("error_handler ".self::translatePHPerrCode($errno).' '.$errstr.' '.$errfile.' '.$errline);
 		// ignore warnings when @ error suppression operator used
 		$er = error_reporting();
@@ -13,41 +13,40 @@ class Debug extends \AuntieWarhol\MVCish\Base {
 		// is to try and unserialize it. Maybe that should use suppression operator tho?
 		if (($errno == E_NOTICE) && (substr($errstr,0,11) == 'unserialize')) return true;
 
-		$logged = false;
-		$exception = null; $messages = [];
+		// we handle directly before triggering the php system.
+		if (Exception::isWarningPrefixed($errstr) && !isset($exception)) return true;
+
+		$logged = false; $messages = [];
 
 		try {
-			// hacky but not sure how else to do it: if you know you're triggering us with an 
-			// exception deliberately, set handlingException so we'll use the one you already have
-			// (see "Exception\ServerWarning-trigger()")
-			if (isset($GLOBALS['MVCish_handlingException'])) {
-				$exception = $GLOBALS['MVCish_handlingException'];
-				$GLOBALS['MVCish_handlineException'] = null;
-			}
-			else {
+			if (!isset($exception)) {
 				$exception = \AuntieWarhol\MVCish\Exception::handlerFactory(
 					$MVCish, $errno, $errstr, $errfile, $errline
 				);
 			}
-			$MVCish->logExceptionMessage($exception);
-			$logged = true;
 		}
 		catch(\Throwable $e) {
 			$messages[] = "Error creating MVCish\Exception: ".$e->getMessage();
-
-			// old fashioned way. just in case
-			$logged = false;
 			try {
+				// old fashioned way. just in case
 				if (self::isFatalPHPerrCode($errno)) {
 					$exception = new \Exception($errstr);
-					$MVCish->logExceptionMessage($exception);
-					$logged = true;
 				}
 			}
 			catch(\Throwable $e) {
 				$messages[] = "Error creating generic Exception: ".$e->getMessage();
 			}
 		}
+		if (isset($exception)) {
+			try {
+				$MVCish->logExceptionMessage($exception);
+				$logged = true;
+			}
+			catch(\Throwable $e) {
+				$messages[] = "Error logging Exception: ".$e->getMessage();
+			}
+		}
+
 		if (!$logged) { // old fashioned way if all else failed
 			$messages = array_merge(
 				self::_buildErrorMessages($MVCish,$errno, $errstr, $errfile, $errline,
@@ -161,7 +160,7 @@ class Debug extends \AuntieWarhol\MVCish\Base {
 		return $strings;
 	}
 
-	public static function getFilteredTrace(int $max=0,\Throwable $forException=null):array {
+	public static function getFilteredTrace(int $max=0,array|\Throwable $exTrace=null):array {
 		// try to skip all the stuff what likely went into outputting the error.
 		// it's best to try and capture the trace as soon as you can and pass it in,
 		// either as an array, or if you're passing us an Exception then it's already stored.
@@ -169,11 +168,17 @@ class Debug extends \AuntieWarhol\MVCish\Base {
 		// will have to be filtered, and more good info should remain.
 
 		$ignoreUntil = null;
-		if (isset($forException)) {
-			$trace = method_exists($forException,'getOverrideTrace') ?
-				$forException->getOverrideTrace() : $forException->getTrace();
-			$ignoreUntil = ['file' => $forException->getFile(), 'line' => $forException->getLine()];
-			//error_log("IE= ".$forException->getFile().' '.$forException->getLine());
+		if (isset($exTrace)) {
+			if (is_array($exTrace)) {
+				$trace = $exTrace;
+			}
+			else {
+				//then it must be Throwable, thank you type-hinting
+				$trace = method_exists($exTrace,'getOverrideTrace') ?
+					$exTrace->getOverrideTrace() : $exTrace->getTrace();
+				$ignoreUntil = ['file' => $exTrace->getFile(), 'line' => $exTrace->getLine()];
+				//error_log("IgnoreUntil= ".$exTrace->getFile().' '.$exTrace->getLine());
+			}
 		}
 		else {
 			$trace = debug_backtrace();

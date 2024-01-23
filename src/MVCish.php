@@ -38,11 +38,11 @@ class MVCish {
 
 	// enforce no-dynamic-properties
 	public function __set($name, $value) {
-		Exception\ServerWarning::throwWarning('Attempt to set undefined property: '
+		Exception\ServerWarning::throwWarning($this,'Attempt to set undefined property: '
 			.static::class.'->'.$name);
 	}
 	public function __get($name) {
-		Exception\ServerWarning::throwWarning('Attempt to read undefined property: '
+		Exception\ServerWarning::throwWarning($this,'Attempt to read undefined property: '
 			.static::class.'->'.$name);
 	}
 
@@ -172,7 +172,7 @@ class MVCish {
 			}
 			else {
 				if (!$this->isCLI()) {
-					Exception\ServerWarning::throwWarning(
+					Exception\ServerWarning::throwWarning($this,
 						"Using MVCish without setting an application directory is discouraged; using tmpfiles."
 					);
 				}
@@ -517,7 +517,7 @@ class MVCish {
 		// then return exception message unless it's a 500 server error
 		if ($e instanceof \AuntieWarhol\MVCish\Exception) {
 			$code = $e->getCode();
-			$this->Response(Response::fromArray([
+			$this->Response(Response::fromArray($this,[
 				'success' => false,
 				'code'       => $e->getCode(),
 				"error"      => (($code == Exception::SERVER_ERROR) && !$this->isCLI()) ?
@@ -553,7 +553,7 @@ class MVCish {
 		}
 		// any other/unexpected exceptions return generic server error
 		else {
-			$this->Response(Response::fromArray([
+			$this->Response(Response::fromArray($this,[
 				'success' => false,
 				'code'     => Exception::SERVER_ERROR,
 				"error"    => Exception::serverError,
@@ -673,7 +673,7 @@ class MVCish {
 	private $_uri;
 	public function uri() {
 		if (!$this->_uri) {
-			$this->_uri = new Util\URI();
+			$this->_uri = new Util\URI($this);
 		}
 		return $this->_uri;
 	}

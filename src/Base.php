@@ -21,11 +21,11 @@ abstract class Base {
 
 	// enforce no-dynamic-properties
 	public function __set($name, $value) {
-		Exception\ServerWarning::throwWarning('Attempt to set undefined property: '
+		Exception\ServerWarning::throwWarning($this->MVCish(),'Attempt to set undefined property: '
 			.static::class.'->'.$name);
 	}
 	public function __get($name) {
-		Exception\ServerWarning::throwWarning('Attempt to read undefined property: '
+		Exception\ServerWarning::throwWarning($this->MVCish(),'Attempt to read undefined property: '
 			.static::class.'->'.$name);
 	}
 
@@ -69,23 +69,23 @@ abstract class Base {
 	// we don't want magic method accessors, but you can use these to
 	// do the repititve work in your accessors, eg:
 	//
-	//	private int $code;
+	//	protected int $code; // must be protected not private or Base can't see them
 	//	public function code(int $set=null):?int {
-	//		return $this->getSetScalar($set,'code');
+	//		return $this->getSetScalar('code',$set);
 	//	}
-	//	private array $data = [];
+	//	protected array $data = [];
 	//	public function data(string $key=null,$set=null,$setAll=null) {
-	//		return $this->getSetArray($key,$set,$setAll,'data');
+	//		return $this->getSetArray('data',$key,$set,$setAll);
 	//	}
 	//
 	// will auto warn/err if you haven't defined $prop
 	// we don't check type on Scalar, so you should.
 
-	private function getSetScalar($set=null,string $prop) {
+	protected function getSetScalar(string $prop,$set=null):mixed {
 		if (isset($set)) $this->$prop = $set;
-		return $this->$prop;
+		return $this->$prop ?? null;
 	}
-	protected function getSetArray(string $key=null,$set=null,array $setAll=null,string $prop) {
+	protected function getSetArray(string $prop,string $key=null,$set=null,array $setAll=null):mixed {
 		if (isset($setAll)) {
 			$this->$prop = $setAll;
 		}
@@ -95,7 +95,7 @@ abstract class Base {
 		}
 		return $this->$prop;
 	}
-	protected function getPushArray($set=null,array $setAll=null,string $prop) {
+	protected function getPushArray(string $prop,$set=null,array $setAll=null):?array {
 		if (isset($setAll)) {
 			$this->$prop = $setAll;
 		}
@@ -109,8 +109,9 @@ abstract class Base {
 	//****************************************************************************
 	// Misc utils & conveniences
 
-	public static function parseBool(string $string,callable $callback=null) {
-		return filter_var($success,FILTER_VALIDATE_BOOLEAN,FILTER_NULL_ON_FAILURE); 
+	public static function parseBool(string $string,bool &$boolVal=null) {
+		$boolVal = filter_var($string,FILTER_VALIDATE_BOOLEAN,FILTER_NULL_ON_FAILURE);
+		return isset($boolVal);
 	}
 }
 ?>

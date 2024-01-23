@@ -6,14 +6,22 @@ class URI implements \JsonSerializable {
 
 	private string $_url;
 	private array  $_components;
+	private Closure $_onParseFail;
 
-	public function __construct(string|self $url,$params=null,$replace=false) {
+	public function __construct(string|self $url,array $params=null,bool $replace=false,Closure $onParseFail=null) {
 		$this->_changed = false;
 		$this->_url = is_string($url) ? $url : $url->__toString();
 		if (isset($params)) {
 			$replace ? $this->queryParams($params) : $this->addToQuery($params);
 		}
+		if (isset($onParseFail)) $this->_onParseFail = $onParseFail;
 	}
+
+	// void hook for if you want to show or throw an error or something
+	public function onParseFail():void {
+		if (isset($this->_onParseFail)) $this->_onParseFail($this);
+	}
+
 
 	public function url():string {
 		if ($this->_changed) $this->_buildUrl();
@@ -61,18 +69,7 @@ class URI implements \JsonSerializable {
 				$this->_components = $parsed;
 			}
 			else {
-				$file = $line = null;
-				foreach (Debug::getFilteredTrace() as $t) {
-					if (isset($t['file']) && (
-						(isset($t['class']) && ($t['class'] == 'AuntieWarhol\MVCish\View\Render')) ||
-						(isset($t['function']) && in_array($t['function'],['uriFor','assetUriFor']))
-					)) {
-						$file = $t['file']; $line = $t['line'];
-						break;
-					}
-				}
-				Exception\ServerWarning::throwWarning(
-					static::class." Failed to parse url '".$this->_url."'",$file,$line);
+				$this->onParseFail();
 			}
 		}
 		if (is_array($setComponents)) {

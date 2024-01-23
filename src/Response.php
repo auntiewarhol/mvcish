@@ -42,26 +42,27 @@ class Response extends Base {
 
 	//****************************************************************************			
 
-	private bool $respSuccess;
+	protected bool $respSuccess;
 	public function success(bool $set=null):bool {
-		return $this->getSetScalar($set,'respStatus');
+		// assume success until told otherwise
+		return $this->getSetScalar('respSuccess',$set) ?? true;
 	}
 
 
 
-	private array $respHeaders = [];
+	protected array $respHeaders = [];
 	public function headers(string $set=null,array $setAll=null):?array {
-		return $this->getPushArray($set,$setAll,'respRedirect');
+		return $this->getPushArray('respHeaders',$set,$setAll);
 	}
 
-	private string $respBody;
+	protected string $respBody;
 	public function body(string $set=null):?string {
-		return $this->getSetScalar($set,'respBody');
+		return $this->getSetScalar('respBody',$set);
 	}
 	public function hasBody():bool { return !empty($this->respBody); }
 
-	private array $respData = [];
-	public function data(string $key=null,mixed $set=null,array $setAll=null):?mixed {
+	protected array $respData = [];
+	public function data(string $key=null,mixed $set=null,array $setAll=null):mixed {
 
 		// prolly not gonna keep this but BF needs it for first merge
 		// turn ->data('redirect',$url) into ->redirect($url)
@@ -69,74 +70,71 @@ class Response extends Base {
 			return $this->$key($set);
 		}
 
-		return $this->getSetArray($key,$set,$setAll,'respData');
+		return $this->getSetArray('respData',$key,$set,$setAll);
 	}
 
-	private object $respObject;
+	protected object $respObject;
 	public function object(object $set=null):?object {
-		return $this->getSetScalar($set,'respObject');
+		return $this->getSetScalar('respObject',$set);
 	}
 
 
-
-	private int $respCode;
+	protected int $respCode;
 	public function code(int $set=null):?int {
-		return $this->getSetScalar($set,'respCode');
+		return $this->getSetScalar('respCode',$set);
 	}
 
-	private string $respError;
+	protected string $respError;
 	public function error(string $set=null):?string {
-		return $this->getSetScalar($set,'respError');
+		return $this->getSetScalar('respError',$set);
 	}
 
-	private array $respMessages = [];
+	protected array $respMessages = [];
 	public function messages(string $key=null,mixed $set=null,array $setAll=null):?array {
-		return $this->getSetArray($key,$set,$setAll,'respMessages');
+		return $this->getSetArray('respMessages',$key,$set,$setAll);
 	}
 
-	private string $respStatusText;
+	protected string $respStatusText;
 	public function statusText(string $set=null):?string {
-		return $this->getSetScalar($set,'respStatusText');
+		return $this->getSetScalar('respStatusText',$set);
 	}
 
 
-
-	private string $respRedirect;
-	public function redirect(string|URI $set=null):?string|URI {
-		return $this->getSetScalar($set,'respRedirect');
+	protected string $respRedirect;
+	public function redirect(string|URI $set=null):mixed {
+		return $this->getSetScalar('respRedirect',$set);
 	}
 	public function hasRedirect():bool { return !empty($this->redirect); }
 
-	private string $respNoPostRedirect;
+	protected string $respNoPostRedirect;
 	public function noPostRedirect(bool $set=null):?bool {
-		return $this->getSetScalar($set,'respNoPostRedirect');
+		return $this->getSetScalar('respNoPostRedirect',$set);
 	}
 
-	private array $respRedirectParams = [];
+	protected array $respRedirectParams = [];
 	public function redirectParams(string $key=null,string $set=null,array $setAll=null):?array {
-		return $this->getSetArray($key,$set,$setAll,'respRedirectParams');
+		return $this->getSetArray('respRedirectParams',$key,$set,$setAll);
 	}
 
 
-
-	private string $respFilename;
+	protected string $respFilename;
 	public function filename(string $set=null):?string {
-		return $this->getSetScalar($set,'respFilename');
+		return $this->getSetScalar('respFilename',$set);
 	}
 
-	private mixed $respStreanHandle;
-	public function streamHandle(mixed $set=null):?mixed {
-		return $this->getSetScalar($set,'respStreamHandle');
+	protected mixed $respStreanHandle;
+	public function streamHandle(mixed $set=null):mixed {
+		return $this->getSetScalar('respStreamHandle',$set);
 	}
 
-	private mixed $respRowCallback;
-	public function rowCallback(mixed $set=null):?mixed {
-		return $this->getSetScalar($set,'respRowCallback');
+	protected mixed $respRowCallback;
+	public function rowCallback(mixed $set=null):mixed {
+		return $this->getSetScalar('respRowCallback',$set);
 	}
 
-	private array $respRows = [];
+	protected array $respRows = [];
 	public function rows(array $set=null,array $setAll=null):?array {
-		return $this->getPushArray($set,$setAll,'respRows');
+		return $this->getPushArray('respRows',$set,$setAll);
 	}
 
 
@@ -149,9 +147,11 @@ class Response extends Base {
 	public static function fromString(\AuntieWarhol\MVCish\MVCish $MVCish,string $string):self {
 		$response = new self($MVCish);
 
+		$bool = null;
+		$response->success(
 		// if the string parses to true/false, use it, otherwise assume success
-		self::parseBool($string);
-		$response->success(isset($bool) ? $bool : true);
+			self::parseBool($string,$bool) ? $response->success($bool) : true
+		);
 
 		// either way it's also the literal body of the response
 		$response->body($string);
@@ -162,20 +162,20 @@ class Response extends Base {
 	public static function fromArray(\AuntieWarhol\MVCish\MVCish $MVCish,array $data):self {
 		$response = new self($MVCish);
 
-		foreach(self::RESPONSEKEYS) as $key => $type) {
+		foreach(self::RESPONSEKEYS as $key => $type) {
 
 			// if 'success' not explicity found, assume true but bark
 			if ($key == 'success') {
+				$bool = null;
 				if (isset($data[$key])) {
-					$bool = self::parseBool($data[$key]);
-					if (!isset($bool)) {
-						Exception\ServerWarning::throwWarning(
+					if (!self::parseBool($data[$key],$bool)) {
+						Exception\ServerWarning::throwWarning($MVCish,
 							"Could not parse bool from 'success' key in response data; "
 							."assuming success, but something may be wrong");
 					}
 				}
 				else {
-					Exception\ServerWarning::throwWarning(
+					Exception\ServerWarning::throwWarning($MVCish,
 						"Could not find 'success' key in response data; "
 						."assuming success, but something may be wrong");
 				}
@@ -197,7 +197,7 @@ class Response extends Base {
 
 		if ((!$response->data()) & !empty($data)) {
 			// if anything left, take that as data if not set
-			$response->data($data);
+			$response->data(null,null,$data);
 		}
 		return $response;
 	}
@@ -206,11 +206,12 @@ class Response extends Base {
 		$response = new self($MVCish);
 		$response->object($obj);
 
+		$bool = null;
 		$successMethod = method_exists($obj,'success') ? 'success' :
 			(method_exists($obj,'Success') ? 'Success' : null);
 		if (isset($successMethod)) {
 			try {
-				$bool = self::parseBool($obj->$successMethod());
+				self::parseBool($obj->$successMethod(),$bool);
 			}
 			catch(\Throwable $e) { }
 		}
@@ -218,7 +219,7 @@ class Response extends Base {
 			$response->success($bool);
 		}
 		else {
-			Exception\ServerWarning::throwWarning(
+			Exception\ServerWarning::throwWarning($MVCish,
 				"Could not parse boolean success from response object; "
 				."assuming success, but something may be wrong");
 			$response->success(true);
@@ -236,29 +237,28 @@ class Response extends Base {
 		// old school and/or json data.
 		if (is_array($cResponse)) return self::fromArray($MVCish,$cResponse);
 
-		// they responded with some not-Response object. We'll stash it.
-		// Maybe it knows how to json serialize itself.
+		// they responded with some not-Response object.
+		// It probably knows how to json serialize itself.
 		if (is_object($cResponse)) return self::fromForeignObect($MVCish,$cResponse);
 
 		$response = new self($MVCish);
-		switch($cResponse) {
+		$success =
+			// No news is good news. If controller didn't respond at all,
+			// and didn't error out, it must have done it's business ok.
+			// we wish you would share your feelings, but we won't push.
+			empty($cResponse) ? true
+			// best way to respond if you don't have anything else to say:
+			: (is_bool($cResponse) ? $cResponse
+		: null);
 
-			case NULL:
-				// No news is good news. If controller didn't respond at all,
-				// and didn't error out, it must have done it's business ok.
-				// we wish you would share your feelings, but we won't push.
-				$response->success(true); break;
-
-			case is_bool($cResponse):
-				// best way to respond if you don't have anything else to say.
-				$response->success($cResponse); break;
-
-			default:
-				Exception\ServerWarning::throwWarning("Could not reliably parse success value "
-					."from Response; assuming success, but something seems wrong");
-				$response->success(true)
-
+		if (!isset($success)) {
+			$success = true;
+			Exception\ServerWarning::throwWarning($MVCish,
+				"Could not reliably parse success value from Response"
+				."; assuming success, but something may be wrong");
+			$response->success(true);
 		}
+		$response->success($success);
 		return $response;	
 	}
 

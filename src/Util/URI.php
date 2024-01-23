@@ -1,11 +1,9 @@
 <?php
 namespace AuntieWarhol\MVCish\Util;
 
-class URI {
+class URI extends \AuntieWarhol\MVCish\Base {
 
 	/* Uri helpers */
-
-	public function __construct() {	}
 
 	public function getCurrentScheme($withSep=true) {
 		return (((!empty($_SERVER['HTTPS'])) && $_SERVER['HTTPS'] !== 'off') ||
@@ -38,12 +36,25 @@ class URI {
 	}
 
 
-	public function uriFor($url,$params=[]) {
+	public function uriFor($url,array $params=null):mixed {
 		if (empty($url)) $url = isset($_SERVER['REDIRECT_URL'])
 			? $_SERVER['REDIRECT_URL'] : $_SERVER['PHP_SELF'];
 		if (!isset($params)) $params = [];
 
-		$uri = new \AuntieWarhol\MVCish\URI($url,$params);
+		$uri = new \AuntieWarhol\MVCish\URI($url,$params,null,function($uri) {
+			$file = $line = null;
+			foreach (\AuntieWarhol\MVCish\Debug::getFilteredTrace() as $t) {
+				if (isset($t['file']) && (
+					(isset($t['class']) && ($t['class'] == 'AuntieWarhol\MVCish\View\Render')) ||
+					(isset($t['function']) && in_array($t['function'],['uriFor','assetUriFor']))
+				)) {
+					$file = $t['file']; $line = $t['line'];
+					break;
+				}
+			}
+			Exception\ServerWarning::throwWarning($this->MVCish(),
+				static::class." Failed to parse url '".$uri->_url."'",$file,$line);
+		});
 		if ($uri->isRelative()) {
 
 			if ($scheme = $this->getCurrentScheme(false)) {
@@ -74,7 +85,7 @@ class URI {
 	}
 
 	// adds the v=time query param to js/css links to avoid browser caching issues
-	public function assetUriFor($url,$params = [],$opts = []) {
+	public function assetUriFor($url,$params = [],$opts = []):mixed {
 		$uri = new \AuntieWarhol\MVCish\URI($url,$params);
 		if ($fullpath = $uri->systemPath()) {
 			if (file_exists($fullpath)) {

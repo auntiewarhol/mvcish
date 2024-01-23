@@ -70,7 +70,7 @@ if ($view = $MVCish->View()) {
 	$view->setIllegalPropSneaky[] = true;
 }
 
-\AuntieWarhol\MVCish\Exception\ServerWarning::throwWarning("test the warning system");
+\AuntieWarhol\MVCish\Exception\ServerWarning::throwWarning($MVCish,"test the warning system");
 trigger_error("and a regular dumb error",E_USER_ERROR);
 echo "still here\n";
 
