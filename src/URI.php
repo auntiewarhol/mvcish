@@ -6,9 +6,9 @@ class URI implements \JsonSerializable {
 
 	private string $_url;
 	private array  $_components;
-	private Closure $_onParseFail;
+	private \Closure $_onParseFail;
 
-	public function __construct(string|self $url,array $params=null,Closure $onParseFail=null) {
+	public function __construct(string|self $url,array $params=null,\Closure $onParseFail=null) {
 		$this->_changed = false;
 		$this->_url = is_string($url) ? $url : $url->__toString();
 		if (isset($onParseFail)) $this->_onParseFail = $onParseFail;
