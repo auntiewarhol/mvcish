@@ -1,223 +1,223 @@
 <?php
-namespace AuntieWarhol\MVCish\Util;
+namespace AuntieWarhol\MVCish;
 use Symfony\Polyfill\Intl\Idn;
 
 
 class Validator extends \AuntieWarhol\MVCish\Base {
 
-	/* pass no args, get the validators hash;
-		pass one arg, get the validator of that name;
-		pass two args, validate arg2 using the arg1 validator 
-	*/
-	private $_validators;
-	public function validators() {
-		$args = func_get_args();
-		if (empty($this->_validators)) {
-			$this->_validators = [
-				'boolean' => function($validator,&$value) {
-					// if $answer is "1", "true", "on", "yes", "0", "false", "off", "no", or ""
-					// return true and convert $answer to true boolean
-					$res = filter_var($value,FILTER_VALIDATE_BOOLEAN,FILTER_NULL_ON_FAILURE);
-					if ($res === NULL) return false;
-					$value = $res;
+	private array $_validators;
+	private array $_defaulters;
+
+	public function __construct(\AuntieWarhol\MVCish\MVCish $MVCish) {
+		parent::__construct($MVCish);
+
+		// set these in construction so that $this is available to funcs who need it
+
+		$this->_validators = [
+			'boolean' => function($validator,&$value) {
+				// if $answer is "1", "true", "on", "yes", "0", "false", "off", "no", or ""
+				// return true and convert $answer to true boolean
+				$res = filter_var($value,FILTER_VALIDATE_BOOLEAN,FILTER_NULL_ON_FAILURE);
+				if ($res === NULL) return false;
+				$value = $res;
+				return true;
+			},
+			'digit' => function($validator,$value) {
+				return ctype_digit($value);
+			},
+			'alphanumeric' => function($validator,$value) {
+				return ctype_alnum($value);
+			},
+			// alphanumeric plus underscore
+			'word' => function($validator,$value) {
+				return preg_match('/^\w*$/',$value) ? true : false;
+			},
+			// word plus hyphen
+			'word-plus' => function($validator,$value) {
+				return preg_match('/^[\w-]*$/',$value) ? true : false;
+			},
+			'min' => function($validator,$value,$min) {
+				if ($value >= $min) return true;
+				return 'Please enter a value >= '.$min;
+			},
+			'max' => function($validator,$value,$max) {
+				if ($value <= $max) return true;
+				return 'Please enter a value <= '.$max;
+			},
+			'email' => function($validator,$value) {
+				if (filter_var($value,FILTER_VALIDATE_EMAIL) === false) {
+					return 'Please enter a valid email';
+				}
+				return true;
+			},
+			'domain' => function($validator,$value) {
+				if (filter_var($value,FILTER_VALIDATE_DOMAIN,FILTER_FLAG_HOSTNAME) === false) {
+					return 'Please enter a valid domain';
+				}
+				return true;
+			},
+			// by default validates http & https only. pass allowedSchemes to validate others
+			'uri' => function($validator,&$value,$options=[]) {
+				// options:
+				if (!isset($options['allowedSchemes']))  $options['allowedSchemes'] = ['http','https'];
+				if (!isset($options['allowUnicode']))    $options['allowUnicode'] = true;
+				if (!isset($options['allowPrivate']))    $options['allowPrivate'] = false;
+				if (!isset($options['allowIP']))         $options['allowIP']      = true;
+				$modvalue = $value;
+
+				// first, filter/sanitize it
+				$filtered = filter_var($modvalue,FILTER_VALIDATE_URL);
+				if ($filtered === false) {
+					// try adding http, if it's in the allowed schemes and not
+					// already there, then pass it through filter_var again
+					if (in_array('http',$options['allowedSchemes']) && 
+						!preg_match('/^[a-z]*:/',$modvalue)
+					) {
+						// ltrim in case we got a schemeles //foo.bar
+						$modvalue = 'http://'.ltrim($modvalue,'/');
+						$filtered = filter_var($modvalue,FILTER_VALIDATE_URL);
+					}
+				}
+
+				// filter_var will not allow unicode domains. so we don't care
+				// whether it passed or failed, we're just letting it sanitize.
+				if ($filtered === false) {
+					// filter_var will fail unicode domains. so if filter_var
+					// failed and we don't want unicode, fail now.
+					if (!$options['allowUnicode'])
+						return 'Please enter a valid URL (unicode not allowed).';
+				}
+				else {
+					// take any sanitization filter_var may have done
+					$modvalue = $filtered;
+				}
+
+				// now test allowed schemes
+				$schemeOK = false;
+				foreach ($options['allowedSchemes'] as $scheme) {
+					if (strpos($modvalue,$scheme.'://') === 0) {
+						$schemeOK = true; break;
+					}
+				}
+				if (!$schemeOK) {
+					return 'Please enter a valid '
+						.$this->listifyArray($options['allowedSchemes'],'or').' URL.';
+				}
+
+				// we're good now if allowing private domains & filter_var passed
+				if ($options['allowPrivate'] && ($filtered !== false)) {
+					$value = $modvalue;
 					return true;
-				},
-				'digit' => function($validator,$value) {
-					return ctype_digit($value);
-				},
-				'alphanumeric' => function($validator,$value) {
-					return ctype_alnum($value);
-				},
-				// alphanumeric plus underscore
-				'word' => function($validator,$value) {
-					return preg_match('/^\w*$/',$value) ? true : false;
-				},
-				// word plus hyphen
-				'word-plus' => function($validator,$value) {
-					return preg_match('/^[\w-]*$/',$value) ? true : false;
-				},
-				'min' => function($validator,$value,$min) {
-					if ($value >= $min) return true;
-					return 'Please enter a value >= '.$min;
-				},
-				'max' => function($validator,$value,$max) {
-					if ($value <= $max) return true;
-					return 'Please enter a value <= '.$max;
-				},
-				'email' => function($validator,$value) {
-					if (filter_var($value,FILTER_VALIDATE_EMAIL) === false) {
-						return 'Please enter a valid email';
-					}
-					return true;
-				},
-				'domain' => function($validator,$value) {
-					if (filter_var($value,FILTER_VALIDATE_DOMAIN,FILTER_FLAG_HOSTNAME) === false) {
-						return 'Please enter a valid domain';
-					}
-					return true;
-				},
-				// by default validates http & https only. pass allowedSchemes to validate others
-				'uri' => function($validator,&$value,$options=[]) {
-					// options:
-					if (!isset($options['allowedSchemes']))  $options['allowedSchemes'] = ['http','https'];
-					if (!isset($options['allowUnicode']))    $options['allowUnicode'] = true;
-					if (!isset($options['allowPrivate']))    $options['allowPrivate'] = false;
-					if (!isset($options['allowIP']))         $options['allowIP']      = true;
-					$modvalue = $value;
+				}
 
-					// first, filter/sanitize it
-					$filtered = filter_var($modvalue,FILTER_VALIDATE_URL);
-					if ($filtered === false) {
-						// try adding http, if it's in the allowed schemes and not
-						// already there, then pass it through filter_var again
-						if (in_array('http',$options['allowedSchemes']) && 
-							!preg_match('/^[a-z]*:/',$modvalue)
-						) {
-							// ltrim in case we got a schemeles //foo.bar
-							$modvalue = 'http://'.ltrim($modvalue,'/');
-							$filtered = filter_var($modvalue,FILTER_VALIDATE_URL);
-						}
-					}
+				$parsedHost = parse_url($modvalue, PHP_URL_HOST);
 
-					// filter_var will not allow unicode domains. so we don't care
-					// whether it passed or failed, we're just letting it sanitize.
-					if ($filtered === false) {
-						// filter_var will fail unicode domains. so if filter_var
-						// failed and we don't want unicode, fail now.
-						if (!$options['allowUnicode'])
-							return 'Please enter a valid URL (unicode not allowed).';
-					}
-					else {
-						// take any sanitization filter_var may have done
-						$modvalue = $filtered;
-					}
+				$parser = $this->MVCish()->domainParser();
+				$result = $parser->resolvePublicSuffixList($parsedHost);
+				if ($result->suffix()->isICANN()) {
 
-					// now test allowed schemes
-					$schemeOK = false;
-					foreach ($options['allowedSchemes'] as $scheme) {
-						if (strpos($modvalue,$scheme.'://') === 0) {
-							$schemeOK = true; break;
-						}
-					}
-					if (!$schemeOK) {
-						return 'Please enter a valid '
-							.$this->listifyArray($options['allowedSchemes'],'or').' URL.';
-					}
-
-					// we're good now if allowing private domains & filter_var passed
-					if ($options['allowPrivate'] && ($filtered !== false)) {
+					if ($filtered !== false ) {
+						// filter_var said it was ok, so ok
 						$value = $modvalue;
 						return true;
 					}
+					elseif ($options['allowUnicode']) {
+						$encoded = idn_to_ascii($parsedHost);
 
-					$parsedHost = parse_url($modvalue, PHP_URL_HOST);
-
-					$parser = $this->MVCish()->domainParser();
-					$result = $parser->resolvePublicSuffixList($parsedHost);
-					if ($result->suffix()->isICANN()) {
-
-						if ($filtered !== false ) {
-							// filter_var said it was ok, so ok
+						// an ascii hostname should only contain letters, numbers, or .-_
+						// if punycode didn't encode to that, it should be a fail.
+						if (preg_match('/^[a-zA-Z0-9_.\/-]*$/',$encoded)) {
 							$value = $modvalue;
 							return true;
 						}
-						elseif ($options['allowUnicode']) {
-							$encoded = idn_to_ascii($parsedHost);
-
-							// an ascii hostname should only contain letters, numbers, or .-_
-							// if punycode didn't encode to that, it should be a fail.
-							if (preg_match('/^[a-zA-Z0-9_.\/-]*$/',$encoded)) {
-								$value = $modvalue;
-								return true;
-							}
-						}
 					}
-					elseif ($options['allowIP'] && $result->isIp()) {
-						$value = $modvalue;
+				}
+				elseif ($options['allowIP'] && $result->isIp()) {
+					$value = $modvalue;
+					return true;
+				}
+				return 'Please enter a valid URL.';
+			},
+			'minlength' => function($validator,$value,$min) {
+				if (mb_strlen($value) < $min) {
+					return "Please enter a minimum $min characters.";
+				}
+				return true;
+			},
+			'maxlength' => function($validator,$value,$max) {
+				if (mb_strlen($value) > $max) {
+					return "Please enter a maximum $max characters.";
+				}
+				return true;
+			},
+			'date_iso' => function($validator,$value) {
+				if (preg_match("/^(\d\d\d\d)\-(\d\d)\-(\d\d)$/",$value,$matches)) {
+					if (checkdate($matches[2],$matches[3],$matches[1])) {
 						return true;
 					}
-					return 'Please enter a valid URL.';
-				},
-				'minlength' => function($validator,$value,$min) {
-					if (mb_strlen($value) < $min) {
-						return "Please enter a minimum $min characters.";
-					}
-					return true;
-				},
-				'maxlength' => function($validator,$value,$max) {
-					if (mb_strlen($value) > $max) {
-						return "Please enter a maximum $max characters.";
-					}
-					return true;
-				},
-				'date_iso' => function($validator,$value) {
+				}
+				return false;
+			},
+			//convert date from $format, validate & return as iso
+			'date_format_to_iso' => function($validator,&$value,$format) {
+				if ($isoDate = \DateTime::createFromFormat($format,$value)) {
+					$value = $isoDate->format('Y-m-d');
 					if (preg_match("/^(\d\d\d\d)\-(\d\d)\-(\d\d)$/",$value,$matches)) {
 						if (checkdate($matches[2],$matches[3],$matches[1])) {
 							return true;
 						}
 					}
-					return false;
-				},
-				//convert date from $format, validate & return as iso
-				'date_format_to_iso' => function($validator,&$value,$format) {
-					if ($isoDate = \DateTime::createFromFormat($format,$value)) {
-						$value = $isoDate->format('Y-m-d');
-						if (preg_match("/^(\d\d\d\d)\-(\d\d)\-(\d\d)$/",$value,$matches)) {
-							if (checkdate($matches[2],$matches[3],$matches[1])) {
-								return true;
-							}
-						}
-					}
-					return false;
 				}
-			];
-		}
-		if (isset($args[0])) {
-			$validator = isset($this->_validators[$args[0]]) ?
-				$this->_validators[$args[0]] : false;
-			if ($validator && isset($args[1])) {
-				return $validator($this,$args[1]);
+				return false;
 			}
+		];
+		$this->_defaulters = [
+			'booltrue' => function($validator,$value) {
+				return //return true unless (0,false,off,no,"")
+					(filter_var($value,FILTER_VALIDATE_BOOLEAN,FILTER_NULL_ON_FAILURE) === false) ? false : true;
+			},
+			'boolfalse' => function($validator,$value) {
+				return //return false unless (1,true,on,yes)
+					(filter_var($value,FILTER_VALIDATE_BOOLEAN) == true) ? true : false;
+			},
+			'intbooltrue' => function($validator,$value) {
+				return //return 1 unless (0,false,off,no,"")
+					(filter_var($value,FILTER_VALIDATE_BOOLEAN,FILTER_NULL_ON_FAILURE) === false) ? 0 : 1;
+			},
+			'intboolfalse' => function($validator,$value) {
+				return //return 0 unless (1,true,on,yes)
+					(filter_var($value,FILTER_VALIDATE_BOOLEAN) == true) ? 1 : 0;
+			},
+		];
+	}
+
+	//****************************************************************************
+	/* pass no args, get the full functions hash;
+		pass one arg, get the validator/defaulter of that name;
+		pass two args, process arg2 using the arg1 function
+	*/
+	public function validators():mixed {
+		$args = func_get_args();
+		if (isset($args[0])) {
+			$validator = isset($this->_validators[$args[0]]) ? $this->_validators[$args[0]] : false;
+			if ($validator && isset($args[1])) return $validator($this,$args[1]);
 			return $validator;
 		}
 		return $this->_validators;
 	}
 
-	private $_defaulters;
-	public function defaulters() {
+	public function defaulters():mixed {
 		$args = func_get_args();
-		if (empty($this->_defaulters)) {
-			$this->_defaulters = [
-				'booltrue' => function($validator,$value) {
-					return //return true unless (0,false,off,no,"")
-						(filter_var($value,FILTER_VALIDATE_BOOLEAN,FILTER_NULL_ON_FAILURE) === false) ? false : true;
-				},
-				'boolfalse' => function($validator,$value) {
-					return //return false unless (1,true,on,yes)
-						(filter_var($value,FILTER_VALIDATE_BOOLEAN) == true) ? true : false;
-				},
-				'intbooltrue' => function($validator,$value) {
-					return //return 1 unless (0,false,off,no,"")
-						(filter_var($value,FILTER_VALIDATE_BOOLEAN,FILTER_NULL_ON_FAILURE) === false) ? 0 : 1;
-				},
-				'intboolfalse' => function($validator,$value) {
-					return //return 0 unless (1,true,on,yes)
-						(filter_var($value,FILTER_VALIDATE_BOOLEAN) == true) ? 1 : 0;
-				},
-			];
-		}
 		if (isset($args[0])) {
-			$defaulter = isset($this->_defaulters[$args[0]]) ?
-				$this->_defaulters[$args[0]] : false;
-			if ($defaulter && isset($args[1])) {
-				return $defaulter($this,$args[1]);
-			}
+			$defaulter = isset($this->_defaulters[$args[0]]) ? $this->_defaulters[$args[0]] : false;
+			if ($defaulter && isset($args[1])) return $defaulter($this,$args[1]);
 			return $defaulter;
 		}
 		return $this->_defaulters;
 	}
 
 
+	//****************************************************************************
 	private $_passed_data = null;
 	private $_cleaned_data  = [];
 
@@ -281,8 +281,11 @@ class Validator extends \AuntieWarhol\MVCish\Base {
 		return $val;
 	}
 
-	// see account/manage.php for the original example of how to use
-	public function validateForm($definition,$source=null,$cache=true) {
+
+	//****************************************************************************
+	//****************************************************************************
+
+	public function validateForm(array $definition,array $source=null,bool $cache=true):array {
 		$response = ['success'=>true];
 		foreach($definition AS $field => $def) {
 
@@ -305,7 +308,7 @@ class Validator extends \AuntieWarhol\MVCish\Base {
 							$i = is_int($k) ? ($k+1) : $k;
 
 							$subresp = null;
-							$subresp = $this->validate_form($profile,$v,false);
+							$subresp = $this->validateForm($profile,$v,false);
 
 							if (!$subresp['success']) {
 								$response['success'] = false;
@@ -469,17 +472,13 @@ class Validator extends \AuntieWarhol\MVCish\Base {
 		}
 		return $response;
 	}
-	// deprecated alias
-	public function validate_form($definition,$source=null,$cache=true) {
-		return $this->validateForm($definition,$source,$cache);
+
+	//****************************************************************************
+	public function Response(array $definition,array $source=null,bool $cache=true):array {
+		if ($response = $this->validateForm($definition,$source,$cache)) {
+			return new Response::fromArray($this->MVCish(),$response);
+		}
 	}
 
-	private static function listifyArray($array,$conjunction='and',$oxford=true) {
-		$last = array_pop($array);
-		$remaining = count($array);
-		return ($remaining ?
-				implode(', ',$array) . (($oxford && $remaining > 1) ? ',' : '') . " $conjunction "
-			: '') . $last;
-	}
 }
 ?>

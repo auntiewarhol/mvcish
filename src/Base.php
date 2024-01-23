@@ -113,5 +113,13 @@ abstract class Base {
 		$boolVal = filter_var($string,FILTER_VALIDATE_BOOLEAN,FILTER_NULL_ON_FAILURE);
 		return isset($boolVal);
 	}
+
+	public static function listifyArray(array $array,string $conjunction='and',bool $oxford=true):string {
+		$last = array_pop($array);
+		$remaining = count($array);
+		return ($remaining ?
+				implode(', ',$array) . (($oxford && $remaining > 1) ? ',' : '') . " $conjunction "
+			: '') . $last;
+	}
 }
 ?>

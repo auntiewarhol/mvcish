@@ -15,6 +15,8 @@ class Response extends Base {
 		'error'          => 'scalar',
 		'messages'       => 'array',
 		'statusText'     => 'scalar',
+		'missing'        => 'array_push',
+		'invalid'        => 'array_push',
 
 		'redirect'       => 'scalar',
 		'noPostRedirect' => 'scalar',
@@ -105,6 +107,16 @@ class Response extends Base {
 		return $this->getSetScalar('respStatusText',$set);
 	}
 
+	protected array $respMissing = [];
+	public function missing(string $set=null,array $setAll=null):?array {
+		return $this->getPushArray('respMissing',$set,$setAll);
+	}
+
+	protected array $respInvalid = [];
+	public function invalid(string $set=null,array $setAll=null):?array {
+		return $this->getPushArray('respInvalid',$set,$setAll);
+	}
+
 
 	protected string $respRedirect;
 	public function redirect(string|URI $set=null):mixed {
@@ -145,10 +157,8 @@ class Response extends Base {
 
 
 
-
 	//****************************************************************************
 	//****************************************************************************
-
 
 	public static function fromString(\AuntieWarhol\MVCish\MVCish $MVCish,string $string):self {
 		$response = new self($MVCish);
