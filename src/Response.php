@@ -8,6 +8,7 @@ class Response extends Base {
 		'headers'        => 'array_push',
 		'body'           => 'scalar',
 		'data'           => 'array',
+		'valid'          => 'valid',
 		'object'         => 'scalar',
 
 		'code'           => 'scalar',
@@ -71,6 +72,11 @@ class Response extends Base {
 		}
 
 		return $this->getSetArray('respData',$key,$set,$setAll);
+	}
+
+	protected array $respValid = [];
+	public function valid(string $key=null,mixed $set=null,array $setAll=null):mixed {
+		return $this->getSetArray('respValid',$key,$set,$setAll);
 	}
 
 	protected object $respObject;
