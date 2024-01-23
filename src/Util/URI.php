@@ -41,7 +41,7 @@ class URI extends \AuntieWarhol\MVCish\Base {
 			? $_SERVER['REDIRECT_URL'] : $_SERVER['PHP_SELF'];
 		if (!isset($params)) $params = [];
 
-		$uri = new \AuntieWarhol\MVCish\URI($url,$params,null,function($uri) {
+		$uri = new \AuntieWarhol\MVCish\URI($url,$params,function($uri) {
 			$file = $line = null;
 			foreach (\AuntieWarhol\MVCish\Debug::getFilteredTrace() as $t) {
 				if (isset($t['file']) && (

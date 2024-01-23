@@ -8,13 +8,11 @@ class URI implements \JsonSerializable {
 	private array  $_components;
 	private Closure $_onParseFail;
 
-	public function __construct(string|self $url,array $params=null,bool $replace=false,Closure $onParseFail=null) {
+	public function __construct(string|self $url,array $params=null,Closure $onParseFail=null) {
 		$this->_changed = false;
 		$this->_url = is_string($url) ? $url : $url->__toString();
-		if (isset($params)) {
-			$replace ? $this->queryParams($params) : $this->addToQuery($params);
-		}
 		if (isset($onParseFail)) $this->_onParseFail = $onParseFail;
+		if (isset($params)) $this->addToQuery($params);
 	}
 
 	// void hook for if you want to show or throw an error or something
