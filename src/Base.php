@@ -91,7 +91,7 @@ abstract class Base {
 		}
 		else if (isset($key)) {
 			if (isset($set)) $this->$prop = $key;
-			return $this->$prop[$key];
+			return $this->$prop[$key] ?? null;
 		}
 		return $this->$prop;
 	}
