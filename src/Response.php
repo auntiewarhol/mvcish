@@ -241,12 +241,20 @@ class Response extends Base {
 		// It probably knows how to json serialize itself.
 		if (is_object($cResponse)) return self::fromForeignObect($MVCish,$cResponse);
 
+		// not responding at all may return 1. Treat 1 or 0 as bool.
+		// any other int fall through to success but warn.
+		if (is_int($cResponse)) {
+			$success = $cResponse === 0 ? false : ($cResponse === 1 ? true : null);
+		}
+
 		$response = new self($MVCish);
-		$success =
+		$success ??=
 			// No news is good news. If controller didn't respond at all,
 			// and didn't error out, it must have done it's business ok.
 			// we wish you would share your feelings, but we won't push.
 			empty($cResponse) ? true
+			: (is_int($cResponse) && ($cResponse === 0 || $cResponse === 1) ?
+				
 			// best way to respond if you don't have anything else to say:
 			: (is_bool($cResponse) ? $cResponse
 		: null);
