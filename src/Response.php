@@ -253,8 +253,7 @@ class Response extends Base {
 			// and didn't error out, it must have done it's business ok.
 			// we wish you would share your feelings, but we won't push.
 			empty($cResponse) ? true
-			: (is_int($cResponse) && ($cResponse === 0 || $cResponse === 1) ?
-				
+	
 			// best way to respond if you don't have anything else to say:
 			: (is_bool($cResponse) ? $cResponse
 		: null);
