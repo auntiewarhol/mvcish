@@ -49,7 +49,7 @@ class Response extends Base {
 	//****************************************************************************			
 
 	protected bool $respSuccess;
-	public function success(bool $set=null,bool $delete=null):bool {
+	public function success(bool $set=null,bool $delete=false):bool {
 		// assume success until told otherwise
 		return $this->getSetScalar('respSuccess',$set,$delete) ?? true;
 	}
@@ -61,7 +61,7 @@ class Response extends Base {
 	}
 
 	protected string $respBody;
-	public function body(string $set=null,bool $delete=null):?string {
+	public function body(string $set=null,bool $delete=false):?string {
 		return $this->getSetScalar('respBody',$set,$delete);
 	}
 	public function hasBody():bool { return !empty($this->respBody); }
@@ -77,18 +77,18 @@ class Response extends Base {
 	}
 
 	protected object $respObject;
-	public function object(object $set=null,bool $delete=null):?object {
+	public function object(object $set=null,bool $delete=false):?object {
 		return $this->getSetScalar('respObject',$set,$delete);
 	}
 
 
 	protected int $respCode;
-	public function code(int $set=null,bool $delete=null):?int {
+	public function code(int $set=null,bool $delete=false):?int {
 		return $this->getSetScalar('respCode',$set,$delete);
 	}
 
 	protected string $respError;
-	public function error(string $set=null,bool $delete=null):?string {
+	public function error(string $set=null,bool $delete=false):?string {
 		return $this->getSetScalar('respError',$set,$delete);
 	}
 
@@ -98,21 +98,21 @@ class Response extends Base {
 		return $this->getSetArray('respMessages',$key,$set,$action) ?? [];
 	}
 	public function messageSuccess(string|bool|array $set) {
-		return $this->messages('success', $set,is_array($set) ? 'merge' : 'replace')
+		return $this->messages('success', $set,is_array($set) ? 'merge' : 'replace');
 	}
 	public function messageError(string|bool|array $set) {
-		return $this->messages('error',   $set,is_array($set) ? 'merge' : 'replace')
+		return $this->messages('error',   $set,is_array($set) ? 'merge' : 'replace');
 	}
 	public function messageInfo(string|bool|array $set) {
-		return $this->messages('info',    $set,is_array($set) ? 'merge' : 'replace')
+		return $this->messages('info',    $set,is_array($set) ? 'merge' : 'replace');
 	}
 	public function messageWarning(string|bool|array $set) {
-		return $this->messages('warning', $set,is_array($set) ? 'merge' : 'replace')
+		return $this->messages('warning', $set,is_array($set) ? 'merge' : 'replace');
 	}
 
 
 	protected string $respStatusText;
-	public function statusText(string $set=null,bool $delete=null):?string {
+	public function statusText(string $set=null,bool $delete=false):?string {
 		return $this->getSetScalar('respStatusText',$set,$delete);
 	}
 
@@ -128,13 +128,13 @@ class Response extends Base {
 
 
 	protected string $respRedirect;
-	public function redirect(string|URI $set=null,bool $delete=null):mixed {
+	public function redirect(string|URI $set=null,bool $delete=false):mixed {
 		return $this->getSetScalar('respRedirect',$set,$delete);
 	}
 	public function hasRedirect():bool { return !empty($this->redirect); }
 
 	protected string $respNoPostRedirect;
-	public function noPostRedirect(bool $set=null,bool $delete=null):?bool {
+	public function noPostRedirect(bool $set=null,bool $delete=false):?bool {
 		return $this->getSetScalar('respNoPostRedirect',$set,$delete);
 	}
 
@@ -145,17 +145,17 @@ class Response extends Base {
 
 
 	protected string $respFilename;
-	public function filename(string $set=null,bool $delete=null):?string {
+	public function filename(string $set=null,bool $delete=false):?string {
 		return $this->getSetScalar('respFilename',$set,$delete);
 	}
 
 	protected mixed $respStreanHandle;
-	public function streamHandle(mixed $set=null,bool $delete=null):mixed {
+	public function streamHandle(mixed $set=null,bool $delete=false):mixed {
 		return $this->getSetScalar('respStreamHandle',$set,$delete);
 	}
 
 	protected mixed $respRowCallback;
-	public function rowCallback(mixed $set=null,bool $delete=null):mixed {
+	public function rowCallback(mixed $set=null,bool $delete=false):mixed {
 		return $this->getSetScalar('respRowCallback',$set,$delete);
 	}
 
@@ -218,7 +218,7 @@ class Response extends Base {
 					$response->$key($data[$key]);
 				}
 				else if ($type == 'array') {
-					$response->$key(null,null,$data[$key]);
+					$response->$key($data[$key]);
 				}
 				else if ($type == 'array_push') {
 					$response->$key(null,$data[$key]);
