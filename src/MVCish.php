@@ -689,8 +689,6 @@ class MVCish {
 		}
 		return $this->_validator;
 	}
-	// deprecated alias
-	public function validator() { return $this->Validator(); }
 
 	private $_domainParser;
 	public function domainParser() {
