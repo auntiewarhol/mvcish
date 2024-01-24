@@ -5,6 +5,7 @@ class Response extends Base {
 
 	private const RESPONSEKEYS = [
 		'success'        => 'scalar',
+
 		'headers'        => 'array_push',
 		'body'           => 'scalar',
 		'data'           => 'array',
@@ -26,6 +27,8 @@ class Response extends Base {
 		'streamHandle'   => 'scalar',
 		'rowCallbakc'    => 'scalar',
 		'rows'           => 'array_push',
+
+		'Stash'          => 'array'
 	];
 
 	public function __toString(): string  {
@@ -46,116 +49,129 @@ class Response extends Base {
 	//****************************************************************************			
 
 	protected bool $respSuccess;
-	public function success(bool $set=null):bool {
+	public function success(bool $set=null,bool $delete=null):bool {
 		// assume success until told otherwise
-		return $this->getSetScalar('respSuccess',$set) ?? true;
+		return $this->getSetScalar('respSuccess',$set,$delete) ?? true;
 	}
-
 
 
 	protected array $respHeaders = [];
-	public function headers(string $set=null,array $setAll=null):?array {
-		return $this->getPushArray('respHeaders',$set,$setAll);
+	public function headers(string $set=null,array $setAll=null,array $opts=null):?array {
+		return $this->getPushArray('respHeaders',$set,$setAll,$opts);
 	}
 
 	protected string $respBody;
-	public function body(string $set=null):?string {
-		return $this->getSetScalar('respBody',$set);
+	public function body(string $set=null,bool $delete=null):?string {
+		return $this->getSetScalar('respBody',$set,$delete);
 	}
 	public function hasBody():bool { return !empty($this->respBody); }
 
 	protected array $respData = [];
-	public function data(string $key=null,mixed $set=null,array $setAll=null):mixed {
-
-		// prolly not gonna keep this but BF needs it for first merge
-		// turn ->data('redirect',$url) into ->redirect($url)
-		if (isset($key) && array_key_exists($key,self::RESPONSEKEYS)) {
-			return $this->$key($set);
-		}
-
-		return $this->getSetArray('respData',$key,$set,$setAll);
+	public function data(string|bool|array $key=null,mixed $set=null,string $action=null):mixed {
+		return $this->getSetArray('respData',$key,$set,$action);
 	}
 
 	protected array $respValid = [];
-	public function valid(string $key=null,mixed $set=null,array $setAll=null):mixed {
-		return $this->getSetArray('respValid',$key,$set,$setAll);
+	public function valid(string|bool|array $key=null,mixed $set=null,string $action=null):mixed {
+		return $this->getSetArray('respValid',$key,$set,$action);
 	}
 
 	protected object $respObject;
-	public function object(object $set=null):?object {
-		return $this->getSetScalar('respObject',$set);
+	public function object(object $set=null,bool $delete=null):?object {
+		return $this->getSetScalar('respObject',$set,$delete);
 	}
 
 
 	protected int $respCode;
-	public function code(int $set=null):?int {
-		return $this->getSetScalar('respCode',$set);
+	public function code(int $set=null,bool $delete=null):?int {
+		return $this->getSetScalar('respCode',$set,$delete);
 	}
 
 	protected string $respError;
-	public function error(string $set=null):?string {
-		return $this->getSetScalar('respError',$set);
+	public function error(string $set=null,bool $delete=null):?string {
+		return $this->getSetScalar('respError',$set,$delete);
 	}
+
 
 	protected array $respMessages = [];
-	public function messages(string $key=null,mixed $set=null,array $setAll=null):?array {
-		return $this->getSetArray('respMessages',$key,$set,$setAll);
+	public function messages(string|bool|array $key=null,mixed $set=null,string $action=null):array {
+		return $this->getSetArray('respMessages',$key,$set,$action) ?? [];
+	}
+	public function messageSuccess(string|bool|array $set) {
+		return $this->messages('success', $set,is_array($set) ? 'merge' : 'replace')
+	}
+	public function messageError(string|bool|array $set) {
+		return $this->messages('error',   $set,is_array($set) ? 'merge' : 'replace')
+	}
+	public function messageInfo(string|bool|array $set) {
+		return $this->messages('info',    $set,is_array($set) ? 'merge' : 'replace')
+	}
+	public function messageWarning(string|bool|array $set) {
+		return $this->messages('warning', $set,is_array($set) ? 'merge' : 'replace')
 	}
 
+
 	protected string $respStatusText;
-	public function statusText(string $set=null):?string {
-		return $this->getSetScalar('respStatusText',$set);
+	public function statusText(string $set=null,bool $delete=null):?string {
+		return $this->getSetScalar('respStatusText',$set,$delete);
 	}
 
 	protected array $respMissing = [];
-	public function missing(string $set=null,array $setAll=null):?array {
-		return $this->getPushArray('respMissing',$set,$setAll);
+	public function missing(string $set=null,array $setAll=null,array $opts=null):?array {
+		return $this->getPushArray('respMissing',$set,$setAll,$opts);
 	}
 
 	protected array $respInvalid = [];
-	public function invalid(string $set=null,array $setAll=null):?array {
-		return $this->getPushArray('respInvalid',$set,$setAll);
+	public function invalid(string $set=null,array $setAll=null,array $opts=null):?array {
+		return $this->getPushArray('respInvalid',$set,$setAll,$opts);
 	}
 
 
 	protected string $respRedirect;
-	public function redirect(string|URI $set=null):mixed {
-		return $this->getSetScalar('respRedirect',$set);
+	public function redirect(string|URI $set=null,bool $delete=null):mixed {
+		return $this->getSetScalar('respRedirect',$set,$delete);
 	}
 	public function hasRedirect():bool { return !empty($this->redirect); }
 
 	protected string $respNoPostRedirect;
-	public function noPostRedirect(bool $set=null):?bool {
-		return $this->getSetScalar('respNoPostRedirect',$set);
+	public function noPostRedirect(bool $set=null,bool $delete=null):?bool {
+		return $this->getSetScalar('respNoPostRedirect',$set,$delete);
 	}
 
 	protected array $respRedirectParams = [];
-	public function redirectParams(string $key=null,string $set=null,array $setAll=null):?array {
-		return $this->getSetArray('respRedirectParams',$key,$set,$setAll);
+	public function redirectParams(string|bool|array $key=null,string $set=null,string $action=null):?array {
+		return $this->getSetArray('respRedirectParams',$key,$set,$action);
 	}
 
 
 	protected string $respFilename;
-	public function filename(string $set=null):?string {
-		return $this->getSetScalar('respFilename',$set);
+	public function filename(string $set=null,bool $delete=null):?string {
+		return $this->getSetScalar('respFilename',$set,$delete);
 	}
 
 	protected mixed $respStreanHandle;
-	public function streamHandle(mixed $set=null):mixed {
-		return $this->getSetScalar('respStreamHandle',$set);
+	public function streamHandle(mixed $set=null,bool $delete=null):mixed {
+		return $this->getSetScalar('respStreamHandle',$set,$delete);
 	}
 
 	protected mixed $respRowCallback;
-	public function rowCallback(mixed $set=null):mixed {
-		return $this->getSetScalar('respRowCallback',$set);
+	public function rowCallback(mixed $set=null,bool $delete=null):mixed {
+		return $this->getSetScalar('respRowCallback',$set,$delete);
 	}
 
 	protected array $respRows = [];
-	public function rows(array $set=null,array $setAll=null):?array {
-		return $this->getPushArray('respRows',$set,$setAll);
+	public function rows(array $set=null,array $setAll=null,array $opts=null):?array {
+		return $this->getPushArray('respRows',$set,$setAll,$opts);
 	}
 
 
+	// all-purporse datastore for controllers to pass data to templates.
+	// could just use 'data', but this keeps things out of your form data.
+
+	protected array $respStash = [];
+	public function Stash(string|bool|array $key=null,mixed $set=null,string $action=null):?array {
+		return $this->getSetArray('respStash',$key,$set,$action);
+	}
 
 	//****************************************************************************
 	//****************************************************************************

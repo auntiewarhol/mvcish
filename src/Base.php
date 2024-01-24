@@ -81,28 +81,49 @@ abstract class Base {
 	// will auto warn/err if you haven't defined $prop
 	// we don't check type on Scalar, so you should.
 
-	protected function getSetScalar(string $prop,$set=null):mixed {
-		if (isset($set)) $this->$prop = $set;
+	protected function getSetScalar(string $prop,mixed $set=null,bool $delete=false):mixed {
+		if (isset($set) || $delete) $this->$prop = $set;
 		return $this->$prop ?? null;
 	}
-	protected function getSetArray(string $prop,string $key=null,$set=null,array $setAll=null):mixed {
-		if (isset($setAll)) {
-			$this->$prop = $setAll;
+	protected function getSetArray(string $prop,string|bool|array $key=null,mixed $set=null,string $action=null):mixed {
+		$action ??= 'replace';
+
+		// send key=bool to unset the whole array. true sets to [], false sets to NULL
+		if (is_bool($key)) $this->$prop = $key ? [] : null;
+		// send key=array to replace or munge whole array
+		else if (is_array($key)) {
+			$this->$prop ??= [];
+			if     ($action == 'replace') { $this->$prop = $key; }
+			elseif ($action == 'merge')   { $this->$prop = array_merge($this->$prop,$key); }
 		}
-		else if (isset($key)) {
-			if (isset($set)) $this->$prop = $key;
+		else if (isset($key)) { // is string
+			if (isset($set)) {
+				if ($action == 'replace') { $this->$prop[$key] = $set; }
+				else {
+					if (!is_array($this->$prop[$key])) $this->$prop[$key] = [$this->$prop[$key]];
+					if (($action == 'push') && is_array($set)) $action = 'merge';
+					if ($action  == 'push')  {
+						if (is_array($set)) { $action = 'merge'; }
+						else                { $this->$prop[$key][] = $set; }
+					}
+					if ($action  == 'merge') {
+						if (!is_array($set)) { $set = [$set]; }
+						$this->$prop[$key] = array_merge($this->$prop[$key],$set);
+					}
+				}
+			}
 			return $this->$prop[$key] ?? null;
 		}
-		return $this->$prop;
+		return $this->$prop ?? null;
 	}
-	protected function getPushArray(string $prop,$set=null,array $setAll=null):?array {
+	protected function getPushArray(string $prop,$set=null,array $setAll=null,array $opts=null):?array {
 		if (isset($setAll)) {
 			$this->$prop = $setAll;
 		}
 		else if (isset($set)) {
 			$this->$prop[] = $set;
 		}
-		return $this->$prop;
+		return $this->$prop ?? null;
 	}
 
 
