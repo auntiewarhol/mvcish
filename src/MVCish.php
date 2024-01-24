@@ -683,12 +683,14 @@ class MVCish {
 	}
 
 	private $_validator;
-	public function validator() {
+	public function Validator() {
 		if (!$this->_validator) {
-			$this->_validator = new Util\Validator($this);
+			$this->_validator = new Validator($this);
 		}
 		return $this->_validator;
 	}
+	// deprecated alias
+	public function validator() { return $this->Validator(); }
 
 	private $_domainParser;
 	public function domainParser() {
