@@ -1,7 +1,7 @@
 <?php
-namespace AuntieWarhol\MVCish\Exception;
+namespace awPHP\MVCish\Exception;
 
-class NotFound extends \AuntieWarhol\MVCish\Exception {
+class NotFound extends \awPHP\MVCish\Exception {
 	public function __construct($message=null,$code=null, \Exception $previous = null) {
 		$this->statusText = parent::notfoundError;
 		if (!isset($message)) $message = parent::notfoundError;

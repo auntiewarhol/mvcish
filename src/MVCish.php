@@ -1,5 +1,5 @@
 <?php
-namespace AuntieWarhol\MVCish;
+namespace awPHP\MVCish;
 
 use \Monolog\Logger;
 use \Monolog\Handler\StreamHandler;
@@ -515,7 +515,7 @@ class MVCish {
 	public function processExceptionResponse(\Throwable $e):bool {
 		// if it's our exception (or a subclass of our exceptions),
 		// then return exception message unless it's a 500 server error
-		if ($e instanceof \AuntieWarhol\MVCish\Exception) {
+		if ($e instanceof \awPHP\MVCish\Exception) {
 			$code = $e->getCode();
 			$this->Response(Response::fromArray($this,[
 				'success' => false,
@@ -607,7 +607,7 @@ class MVCish {
 	private $_response;
 	public function Response(Response|string $setKey=null,$set=null) {
 		// send a Response object and we become a setter
-		if (isset($setKey) && is_a($setKey,'AuntieWarhol\MVCish\Response')) {
+		if (isset($setKey) && is_a($setKey,'awPHP\MVCish\Response')) {
 			$this->_response = $setKey;
 		}
 		// we will always have a Response, tho the above might replace it
@@ -651,7 +651,7 @@ class MVCish {
 			an "Authorize" method, we'll call it, and pass it anything passed
 			as an 'Authorize' option. The method should return true if authorized.
 			If it returns false, we'll throw an unauthorized exception. Your object
-			can also throw its own \AuntieWarhol\MVCish\Exception if you want to control
+			can also throw its own \awPHP\MVCish\Exception if you want to control
 			the messaging (or throw Forbidden instead of Unauthorized, etc)
 		*/
 		if ($this->Auth() && is_callable([$this->Auth(),'Authorize'])) {

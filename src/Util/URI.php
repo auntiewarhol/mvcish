@@ -1,7 +1,7 @@
 <?php
-namespace AuntieWarhol\MVCish\Util;
+namespace awPHP\MVCish\Util;
 
-class URI extends \AuntieWarhol\MVCish\Base {
+class URI extends \awPHP\MVCish\Base {
 
 	/* Uri helpers */
 
@@ -41,11 +41,11 @@ class URI extends \AuntieWarhol\MVCish\Base {
 			? $_SERVER['REDIRECT_URL'] : $_SERVER['PHP_SELF'];
 		if (!isset($params)) $params = [];
 
-		$uri = new \AuntieWarhol\MVCish\URI($url,$params,function($uri) {
+		$uri = new \awPHP\MVCish\URI($url,$params,function($uri) {
 			$file = $line = null;
-			foreach (\AuntieWarhol\MVCish\Debug::getFilteredTrace() as $t) {
+			foreach (\awPHP\MVCish\Debug::getFilteredTrace() as $t) {
 				if (isset($t['file']) && (
-					(isset($t['class']) && ($t['class'] == 'AuntieWarhol\MVCish\View\Render')) ||
+					(isset($t['class']) && ($t['class'] == 'awPHP\MVCish\View\Render')) ||
 					(isset($t['function']) && in_array($t['function'],['uriFor','assetUriFor']))
 				)) {
 					$file = $t['file']; $line = $t['line'];
@@ -86,7 +86,7 @@ class URI extends \AuntieWarhol\MVCish\Base {
 
 	// adds the v=time query param to js/css links to avoid browser caching issues
 	public function assetUriFor($url,$params = [],$opts = []):mixed {
-		$uri = new \AuntieWarhol\MVCish\URI($url,$params);
+		$uri = new \awPHP\MVCish\URI($url,$params);
 		if ($fullpath = $uri->systemPath()) {
 			if (file_exists($fullpath)) {
 				$key = isset($opts['stampkey']) ? $opts['stampkey'] : 'v';

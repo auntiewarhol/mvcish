@@ -1,7 +1,7 @@
 <?php
-namespace AuntieWarhol\MVCish\Exception;
+namespace awPHP\MVCish\Exception;
 
-class Forbidden extends \AuntieWarhol\MVCish\Exception {
+class Forbidden extends \awPHP\MVCish\Exception {
 	public function __construct($message=null,$code=null, \Exception $previous = null) {
 		$this->statusText = parent::forbiddenError;
 		if (!isset($message)) $message = parent::forbiddenError;

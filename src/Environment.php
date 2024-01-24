@@ -1,8 +1,8 @@
 <?php
-namespace AuntieWarhol\MVCish;
+namespace awPHP\MVCish;
 use \Monolog\Formatter\LineFormatter;
 
-class Environment extends \AuntieWarhol\MVCish\Base {
+class Environment extends \awPHP\MVCish\Base {
 
 	private string $name;
 
@@ -33,7 +33,7 @@ class Environment extends \AuntieWarhol\MVCish\Base {
 	//***************************************************************
 	//***************************************************************
 
-	public function __construct(\AuntieWarhol\MVCish\MVCish $MVCish) {
+	public function __construct(\awPHP\MVCish\MVCish $MVCish) {
 		parent::__construct($MVCish);
 
 		// set messageBuilder functions for the Not Deliverable codes
@@ -114,7 +114,7 @@ class Environment extends \AuntieWarhol\MVCish\Base {
 		if (!file_exists($appConfigFilePath)) {
 			//error_log("notfound appConfig File $appConfigFilePath");
 			if ($this->isRootClass() && $this->MVCish()->Options('appConfigFilename')) {
-				throw new \AuntieWarhol\MVCish\Exception\ServerError(
+				throw new \awPHP\MVCish\Exception\ServerError(
 					"Could not find appConfig file: ".$appConfigFilePath);
 			}
 			return [];
@@ -126,7 +126,7 @@ class Environment extends \AuntieWarhol\MVCish\Base {
 			$result = include($appConfigFilePath);
 		}
 		catch(\Throwable $e) {
-			throw new \AuntieWarhol\MVCish\Exception\ServerError(
+			throw new \awPHP\MVCish\Exception\ServerError(
 				"Failed to parse appConfig from file ".$appConfigFilePath
 				.': '.$e->getMessage());
 		}
@@ -179,7 +179,7 @@ class Environment extends \AuntieWarhol\MVCish\Base {
 
 	public function getPHPorStatusCode(\Throwable $e) {
 		if (method_exists($e,'phpErrorCode') && ($phpErrCode = $e->phpErrorCode())) {
-			return \AuntieWarhol\MVCish\Debug::translatePHPerrCode($phpErrCode);
+			return \awPHP\MVCish\Debug::translatePHPerrCode($phpErrCode);
 		}
 		return $e->getCode();
 	}

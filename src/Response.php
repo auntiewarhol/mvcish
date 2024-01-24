@@ -1,5 +1,5 @@
 <?php
-namespace AuntieWarhol\MVCish;
+namespace awPHP\MVCish;
 
 class Response extends Base {
 
@@ -49,9 +49,9 @@ class Response extends Base {
 	//****************************************************************************			
 
 	protected bool $respSuccess;
-	public function success(bool $set=null,bool $delete=false):bool {
+	public function success(bool|E0E0\Parameter $set=new E0E0\Parameter()):bool {
 		// assume success until told otherwise
-		return $this->getSetScalar('respSuccess',$set,$delete) ?? true;
+		return $this->getSetScalar('respSuccess',$set) ?? true;
 	}
 
 
@@ -61,40 +61,40 @@ class Response extends Base {
 	}
 
 	protected string $respBody;
-	public function body(string $set=null,bool $delete=false):?string {
-		return $this->getSetScalar('respBody',$set,$delete);
+	public function body(string|E0E0\Parameter $set=new E0E0\Parameter()):?string {
+		return $this->getSetScalar('respBody',$set);
 	}
 	public function hasBody():bool { return !empty($this->respBody); }
 
 	protected array $respData = [];
-	public function data(string|bool|array $key=null,mixed $set=null,string $action=null):mixed {
+	public function data(null|string|array|E0E0\Parameter $key=new E0E0\Parameter(),mixed $set=new E0E0\Parameter(),string $action=null):mixed {
 		return $this->getSetArray('respData',$key,$set,$action);
 	}
 
 	protected array $respValid = [];
-	public function valid(string|bool|array $key=null,mixed $set=null,string $action=null):mixed {
+	public function valid(null|string|array|E0E0\Parameter $key=new E0E0\Parameter(),mixed $set=new E0E0\Parameter(),string $action=null):mixed {
 		return $this->getSetArray('respValid',$key,$set,$action);
 	}
 
 	protected object $respObject;
-	public function object(object $set=null,bool $delete=false):?object {
-		return $this->getSetScalar('respObject',$set,$delete);
+	public function object(object $set=new E0E0\Parameter()):?object {
+		return $this->getSetScalar('respObject',$set);
 	}
 
 
 	protected int $respCode;
-	public function code(int $set=null,bool $delete=false):?int {
-		return $this->getSetScalar('respCode',$set,$delete);
+	public function code(int|E0E0\Parameter $set=new E0E0\Parameter()):?int {
+		return $this->getSetScalar('respCode',$set);
 	}
 
 	protected string $respError;
-	public function error(string $set=null,bool $delete=false):?string {
-		return $this->getSetScalar('respError',$set,$delete);
+	public function error(string|E0E0\Parameter $set=new E0E0\Parameter()):?string {
+		return $this->getSetScalar('respError',$set);
 	}
 
 
 	protected array $respMessages = [];
-	public function messages(string|bool|array $key=null,mixed $set=null,string $action=null):array {
+	public function messages(null|string|array|E0E0\Parameter $key=new E0E0\Parameter(),mixed $set=new E0E0\Parameter(),string $action=null):array {
 		return $this->getSetArray('respMessages',$key,$set,$action) ?? [];
 	}
 	public function messageSuccess(string|bool|array $set) {
@@ -112,8 +112,8 @@ class Response extends Base {
 
 
 	protected string $respStatusText;
-	public function statusText(string $set=null,bool $delete=false):?string {
-		return $this->getSetScalar('respStatusText',$set,$delete);
+	public function statusText(string|E0E0\Parameter $set=new E0E0\Parameter()):?string {
+		return $this->getSetScalar('respStatusText',$set);
 	}
 
 	protected array $respMissing = [];
@@ -128,35 +128,35 @@ class Response extends Base {
 
 
 	protected string $respRedirect;
-	public function redirect(string|URI $set=null,bool $delete=false):mixed {
-		return $this->getSetScalar('respRedirect',$set,$delete);
+	public function redirect(string|URI|E0E0\Parameter $set=new E0E0\Parameter()):mixed {
+		return $this->getSetScalar('respRedirect',$set);
 	}
 	public function hasRedirect():bool { return !empty($this->redirect); }
 
 	protected string $respNoPostRedirect;
-	public function noPostRedirect(bool $set=null,bool $delete=false):?bool {
-		return $this->getSetScalar('respNoPostRedirect',$set,$delete);
+	public function noPostRedirect(bool|E0E0\Parameter $set=new E0E0\Parameter()):?bool {
+		return $this->getSetScalar('respNoPostRedirect',$set);
 	}
 
 	protected array $respRedirectParams = [];
-	public function redirectParams(string|bool|array $key=null,string $set=null,string $action=null):?array {
+	public function redirectParams(null|string|array|E0E0\Parameter $key=new E0E0\Parameter(),mixed $set=new E0E0\Parameter(),string $action=null):?array {
 		return $this->getSetArray('respRedirectParams',$key,$set,$action);
 	}
 
 
 	protected string $respFilename;
-	public function filename(string $set=null,bool $delete=false):?string {
-		return $this->getSetScalar('respFilename',$set,$delete);
+	public function filename(string|E0E0\Parameter $set=new E0E0\Parameter()):?string {
+		return $this->getSetScalar('respFilename',$set);
 	}
 
 	protected mixed $respStreanHandle;
-	public function streamHandle(mixed $set=null,bool $delete=false):mixed {
-		return $this->getSetScalar('respStreamHandle',$set,$delete);
+	public function streamHandle(mixed $set=new E0E0\Parameter()):mixed {
+		return $this->getSetScalar('respStreamHandle',$set);
 	}
 
 	protected mixed $respRowCallback;
-	public function rowCallback(mixed $set=null,bool $delete=false):mixed {
-		return $this->getSetScalar('respRowCallback',$set,$delete);
+	public function rowCallback(mixed $set=new E0E0\Parameter()):mixed {
+		return $this->getSetScalar('respRowCallback',$set);
 	}
 
 	protected array $respRows = [];
@@ -169,14 +169,14 @@ class Response extends Base {
 	// could just use 'data', but this keeps things out of your form data.
 
 	protected array $respStash = [];
-	public function Stash(string|bool|array $key=null,mixed $set=null,string $action=null):?array {
-		return $this->getSetArray('respStash',$key,$set,$action);
+	public function Stash(null|string|array|E0E0\Parameter $key=new E0E0\Parameter(),mixed $set=new E0E0\Parameter(),string $action=null):?array {
+		return $this->getSetArray('respStash',$key,$set,$action) ?? [];
 	}
 
 	//****************************************************************************
 	//****************************************************************************
 
-	public static function fromString(\AuntieWarhol\MVCish\MVCish $MVCish,string $string):self {
+	public static function fromString(\awPHP\MVCish\MVCish $MVCish,string $string):self {
 		$response = new self($MVCish);
 
 		$bool = null;
@@ -191,7 +191,7 @@ class Response extends Base {
 		return $response;
 	}
 
-	public static function fromArray(\AuntieWarhol\MVCish\MVCish $MVCish,array $data):self {
+	public static function fromArray(\awPHP\MVCish\MVCish $MVCish,array $data):self {
 		$response = new self($MVCish);
 
 		foreach(self::RESPONSEKEYS as $key => $type) {
@@ -234,7 +234,7 @@ class Response extends Base {
 		return $response;
 	}
 
-	public static function fromForeignObject(\AuntieWarhol\MVCish\MVCish $MVCish,object $obj):self {
+	public static function fromForeignObject(\awPHP\MVCish\MVCish $MVCish,object $obj):self {
 		$response = new self($MVCish);
 		$response->object($obj);
 
@@ -258,7 +258,7 @@ class Response extends Base {
 		}
 	}
 
-	public static function factory(\AuntieWarhol\MVCish\MVCish $MVCish,mixed $cResponse=null):self {
+	public static function factory(\awPHP\MVCish\MVCish $MVCish,mixed $cResponse=null):self {
 
 		// oh hai look at you sexy controller sending us a proper object already
 		if (is_a($cResponse,static::class)) return $cResponse;

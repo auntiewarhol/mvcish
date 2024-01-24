@@ -1,7 +1,7 @@
 <?php
-namespace AuntieWarhol\MVCish\Exception;
+namespace awPHP\MVCish\Exception;
 
-class SeeOther extends \AuntieWarhol\MVCish\Exception {
+class SeeOther extends \awPHP\MVCish\Exception {
 
 	public $internalRedirect  = false;
 

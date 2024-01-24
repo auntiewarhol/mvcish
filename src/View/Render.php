@@ -1,8 +1,8 @@
 <?php
-namespace AuntieWarhol\MVCish\View;
+namespace awPHP\MVCish\View;
 
 
-class Render extends \AuntieWarhol\MVCish\Base {
+class Render extends \awPHP\MVCish\Base {
 
 	// set/get data (besides controller Response) to be used by templates,
 	// eg nav/menu options, page titles, js & css links, etc
@@ -43,7 +43,7 @@ class Render extends \AuntieWarhol\MVCish\Base {
 						case 'array_merge_recursive':
 							$combinedValue = array_merge_recursive($combinedValue,$value); break;
 						default:
-							throw new \AuntieWarhol\MVCish\Exception\ServerError('Invalid opt "'.$opt.'"');
+							throw new \awPHP\MVCish\Exception\ServerError('Invalid opt "'.$opt.'"');
 					}
 					$value = $combinedValue;
 				}
@@ -59,7 +59,7 @@ class Render extends \AuntieWarhol\MVCish\Base {
 				return $this->templateData[$key];
 			return null;
 		}
-		throw new \AuntieWarhol\MVCish\Exception\ServerError('Invalid Key');
+		throw new \awPHP\MVCish\Exception\ServerError('Invalid Key');
 	}
 
 	// make the html generator available to templates 
@@ -148,14 +148,14 @@ class Render extends \AuntieWarhol\MVCish\Base {
 			}
 			// send bool true to use default 404
 			else {
-				throw new \AuntieWarhol\MVCish\Exception\NotFound();
+				throw new \awPHP\MVCish\Exception\NotFound();
 			}
 		}
 
 		// Output
 		if ($output) {
 			if ($MVCish->Environment()->prettyPrintHTML()) {
-				$clean = \AuntieWarhol\MVCish\Util\HtmLawed::call(
+				$clean = \awPHP\MVCish\Util\HtmLawed::call(
 					'hl_tidy',[$html, 't', 'span']) ?? '';
 				echo substr($clean, strpos($clean, "\n")+1);
 			}
@@ -182,11 +182,11 @@ class Render extends \AuntieWarhol\MVCish\Base {
 			$templateDirectory = rtrim($templateDirectory,DIRECTORY_SEPARATOR);
 			if (!is_dir($templateDirectory)) {
 				$MVCish->log('MVCish')->error("Can't find templateDirectory: $templateDirectory");
-				throw new \AuntieWarhol\MVCish\Exception\ServerError('Template Directory Not A Directory');
+				throw new \awPHP\MVCish\Exception\ServerError('Template Directory Not A Directory');
 			}
 		}
 		else {
-			throw new \AuntieWarhol\MVCish\Exception\ServerError('Template Directory Not Defined');
+			throw new \awPHP\MVCish\Exception\ServerError('Template Directory Not Defined');
 		}
 
 		$fullPathTemplateFile = $templateDirectory.DIRECTORY_SEPARATOR.$templateFile;
@@ -198,7 +198,7 @@ class Render extends \AuntieWarhol\MVCish\Base {
 					throw new $noTemplate();
 			}
 			else {
-				throw new \AuntieWarhol\MVCish\Exception\NotFound();
+				throw new \awPHP\MVCish\Exception\NotFound();
 			}
 		}
 		return $fullPathTemplateFile;
@@ -236,7 +236,7 @@ class Render extends \AuntieWarhol\MVCish\Base {
 	// The class may be defined like:
 	//
 	//	   namespace \MyApp\Render;
-	//	   class Account extends \AuntieWarhol\MVCish\View\Render {
+	//	   class Account extends \awPHP\MVCish\View\Render {
 	//	      ...override/add methods as needed to render an Account template
 	//	   }
 	//

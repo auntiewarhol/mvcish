@@ -1,7 +1,7 @@
 <?php
-namespace AuntieWarhol\MVCish\Exception;
+namespace awPHP\MVCish\Exception;
 
-class ServerError extends \AuntieWarhol\MVCish\Exception {
+class ServerError extends \awPHP\MVCish\Exception {
 	public function __construct($message=null,$code=null, \Exception $previous = null) {
 		$this->statusText = parent::serverError;
 		if (!isset($message)) $message = parent::serverError;

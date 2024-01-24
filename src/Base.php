@@ -1,5 +1,5 @@
 <?php
-namespace AuntieWarhol\MVCish;
+namespace awPHP\MVCish;
 
 abstract class Base {
 
@@ -8,14 +8,14 @@ abstract class Base {
 	private $_MVCish;
 	protected $_parentObject;
 
-	public function __construct(\AuntieWarhol\MVCish\MVCish $MVCish) {
+	public function __construct(\awPHP\MVCish\MVCish $MVCish) {
 		$this->_MVCish = $MVCish;
 	}
 	function __destruct() {
 		unset($this->_MVCish);
 		unset($this->_parentObject);
 	}
-	public function MVCish(): \AuntieWarhol\MVCish\MVCish {
+	public function MVCish(): \awPHP\MVCish\MVCish {
 		return $this->_MVCish;
 	}
 
@@ -62,7 +62,7 @@ abstract class Base {
 	// tells whether the current object is directly extended from Base
 	// (as opposed to a subclass of such a class)
 	protected function isRootClass():bool {
-		return get_parent_class($this) === 'AuntieWarhol\MVCish\Base';
+		return get_parent_class($this) === 'awPHP\MVCish\Base';
 	}
 
 
@@ -81,33 +81,57 @@ abstract class Base {
 	// will auto warn/err if you haven't defined $prop
 	// we don't check type on Scalar, so you should.
 
-	protected function getSetScalar(string $prop,mixed $set=null,bool $delete=false):mixed {
-		if (isset($set) || $delete) $this->$prop = $set;
+	protected static function isDefaultedParam($arg) {
+		return is_a($arg,'awPHP\MVCish\E0E0\Parameter');
+	}
+
+	protected function getSetScalar(string $prop,mixed $set=new E0E0\Parameter()):mixed {
+		if (!$this->isDefaultedParam($set)) $this->$prop = $set;
 		return $this->$prop ?? null;
 	}
-	protected function getSetArray(string $prop,string|bool|array $key=null,mixed $set=null,string $action=null):mixed {
-		$action ??= 'replace';
+	protected function getSetArray(string $prop,null|string|array|E0E0\Parameter $key=new E0E0\Parameter(),mixed $set=new E0E0\Parameter(),string $action=null):mixed {
 
-		// send key=bool to unset the whole array. true sets to [], false sets to NULL
-		if (is_bool($key)) $this->$prop = $key ? [] : null;
-		// send key=array to replace or munge whole array
-		else if (is_array($key)) {
+		// ->getSetArray($prop): no key sent, ignore other args, return the whole array
+		if (isset($key) && $this->isDefaultedParam($key)) return $this->$prop ?? null;
+
+		$action ??= 'replace';
+		// ->getSetArray($prop,NULL): send key=null to clear the whole array
+		if (!isset($key)) {
+			$this->$prop = null;
+		}
+		// ->getSetArray($prop,[],?$action): send key=array to replace or munge whole array
+		// option arg $action tells us to replace|merge|push
+		elseif (is_array($key)) {
 			$this->$prop ??= [];
 			if     ($action == 'replace') { $this->$prop = $key; }
 			elseif ($action == 'merge')   { $this->$prop = array_merge($this->$prop,$key); }
 		}
-		else if (isset($key)) { // is string
-			if (isset($set)) {
+		else { // ->getSetArray($prop,'foo') $key is string
+
+			if (!$this->isDefaultedParam($set)) { //if we actually got an arg
+
+				// ->getSetArray($prop,'foo',NULL): send set=null to clear the key
+				if (!isset($set)) $action = 'replace'; // NULL always replaces, action ignored
+
+				// ->getSetArray($prop,'foo',$set), same as:
+				// ->getSetArray($prop,'foo',$set,'replace'): send set=anything to set the key
 				if ($action == 'replace') { $this->$prop[$key] = $set; }
+
 				else {
+					// array-ify current if not already
 					if (!is_array($this->$prop[$key])) $this->$prop[$key] = [$this->$prop[$key]];
-					if (($action == 'push') && is_array($set)) $action = 'merge';
+
 					if ($action  == 'push')  {
+						// "push"-ing one array onto another is just a merge, right?
 						if (is_array($set)) { $action = 'merge'; }
+
+						// else push it. push it real good.
+						// ->getSetArray($prop,'foo',$scalarVal,'push')
 						else                { $this->$prop[$key][] = $set; }
 					}
 					if ($action  == 'merge') {
-						if (!is_array($set)) { $set = [$set]; }
+						if (!is_array($set)) { $set = [$set]; } //arrayify $set now if not already
+						// ->getSetArray($prop,'foo',$arrayVal,'merge'): send set=anything to set the key
 						$this->$prop[$key] = array_merge($this->$prop[$key],$set);
 					}
 				}

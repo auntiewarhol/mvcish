@@ -1,15 +1,15 @@
 <?php
-namespace AuntieWarhol\MVCish\Exception;
-class ServerWarning extends \AuntieWarhol\MVCish\Exception {
+namespace awPHP\MVCish\Exception;
+class ServerWarning extends \awPHP\MVCish\Exception {
 
-	public static function throwWarning(\AuntieWarhol\MVCish\MVCish $MVCish,string $message,string $file=null, int $line=null, array $trace=null):void {
+	public static function throwWarning(\awPHP\MVCish\MVCish $MVCish,string $message,string $file=null, int $line=null, array $trace=null):void {
 
 		if (!isset($trace)) {
 			$trace = debug_backtrace();
-			//error_log("throwWarning fullTrace: ".\AuntieWarhol\MVCish\Debug::getTraceString(0,$trace));
+			//error_log("throwWarning fullTrace: ".\awPHP\MVCish\Debug::getTraceString(0,$trace));
 			array_shift($trace); // pop this call
-			$trace = \AuntieWarhol\MVCish\Debug::getFilteredTrace(0,$trace);
-			//error_log("throwWarning filteredTrace: ".\AuntieWarhol\MVCish\Debug::getTraceString(0,$trace));
+			$trace = \awPHP\MVCish\Debug::getFilteredTrace(0,$trace);
+			//error_log("throwWarning filteredTrace: ".\awPHP\MVCish\Debug::getTraceString(0,$trace));
 		}
 		if (isset($trace[0]) && isset($trace[0]['file']) && !isset($file)) {
 			$file = $trace[0]['file'];
@@ -29,10 +29,10 @@ class ServerWarning extends \AuntieWarhol\MVCish\Exception {
 		$this->phpErrorCode(E_USER_WARNING);
 	}
 
-	public function trigger(\AuntieWarhol\MVCish\MVCish $MVCish) {
+	public function trigger(\awPHP\MVCish\MVCish $MVCish) {
 		//error_log("trigger global Exception, fileLine: ".$this->getFile().' '.$this->getLine());
 		// call the error handler directly, so we can pass ourselves to it
-		\AuntieWarhol\MVCish\Debug::errorHandler($MVCish,E_USER_WARNING,
+		\awPHP\MVCish\Debug::errorHandler($MVCish,E_USER_WARNING,
 			$this->getMessage(),$this->getFile(),$this->getLine(),$this);
 		// now trigger php properly, tho our handler will ignore it the second time
 		trigger_error('E_MVCISH_WARNING: '.$this->getMessage(), E_USER_WARNING);

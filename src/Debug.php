@@ -1,7 +1,7 @@
 <?php
-namespace AuntieWarhol\MVCish;
+namespace awPHP\MVCish;
 
-class Debug extends \AuntieWarhol\MVCish\Base {
+class Debug extends \awPHP\MVCish\Base {
 
 	public static function errorHandler($MVCish,$errno, $errstr, $errfile, $errline, \Throwable $exception=null) {
 		//error_log("error_handler ".self::translatePHPerrCode($errno).' '.$errstr.' '.$errfile.' '.$errline);
@@ -20,7 +20,7 @@ class Debug extends \AuntieWarhol\MVCish\Base {
 
 		try {
 			if (!isset($exception)) {
-				$exception = \AuntieWarhol\MVCish\Exception::handlerFactory(
+				$exception = \awPHP\MVCish\Exception::handlerFactory(
 					$MVCish, $errno, $errstr, $errfile, $errline
 				);
 			}
@@ -191,7 +191,7 @@ class Debug extends \AuntieWarhol\MVCish\Base {
 				(isset($ignoreUntil) && !(isset($t['file']) && isset($t['line']) &&
 					($t['file'] == $ignoreUntil['file']) && ($t['file'] == $ignoreUntil['file']))) ||
 
-				(isset($t['class']) && ($t['class'] == 'AuntieWarhol\MVCish\Debug')) ||
+				(isset($t['class']) && ($t['class'] == 'awPHP\MVCish\Debug')) ||
 				(isset($t['file']) && ($t['file'] == __FILE__)) ||
 
 				(isset($t['class']) && (($t['class'] == 'Exception') ||
@@ -199,13 +199,13 @@ class Debug extends \AuntieWarhol\MVCish\Base {
 
 				(isset($t['file']) && str_contains($t['file'],'mvcish/src/Exception')) ||
 
-				(((isset($t['class']) && ($t['class'] == 'AuntieWarhol\MVCish\MVCish')) || 
+				(((isset($t['class']) && ($t['class'] == 'awPHP\MVCish\MVCish')) || 
 				 (isset($t['file'])  && ($t['file'] == __FILE__))) &&
 				in_array($t['function'],['logExceptionMessage','_error_handler','trigger_error',
-					'AuntieWarhol\MVCish\{closure}'])) ||
+					'awPHP\MVCish\{closure}'])) ||
 				
-				((isset($t['class']) && (($t['class'] == 'AuntieWarhol\MVCish\Environment') ||
-				  is_subclass_of($t['class'],'AuntieWarhol\MVCish\Environment'))) &&
+				((isset($t['class']) && (($t['class'] == 'awPHP\MVCish\Environment') ||
+				  is_subclass_of($t['class'],'awPHP\MVCish\Environment'))) &&
 				in_array($t['function'],['buildDefaultExceptionMessage','buildExceptionMessage']))
 			) {
 				$count = count($trace);

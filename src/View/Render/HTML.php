@@ -1,5 +1,5 @@
 <?php
-namespace AuntieWarhol\MVCish\View\Render;
+namespace awPHP\MVCish\View\Render;
 
 /*
 	Ok, so this started out as a way to make menulists & selectlists, and it

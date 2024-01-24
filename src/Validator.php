@@ -1,14 +1,14 @@
 <?php
-namespace AuntieWarhol\MVCish;
+namespace awPHP\MVCish;
 use Symfony\Polyfill\Intl\Idn;
 
 
-class Validator extends \AuntieWarhol\MVCish\Base {
+class Validator extends \awPHP\MVCish\Base {
 
 	private array $_validators;
 	private array $_defaulters;
 
-	public function __construct(\AuntieWarhol\MVCish\MVCish $MVCish) {
+	public function __construct(\awPHP\MVCish\MVCish $MVCish) {
 		parent::__construct($MVCish);
 
 		// set these in construction so that $this is available to funcs who need it

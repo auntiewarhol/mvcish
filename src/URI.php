@@ -1,5 +1,5 @@
 <?php
-namespace AuntieWarhol\MVCish;
+namespace awPHP\MVCish;
 
 class URI implements \JsonSerializable {
 

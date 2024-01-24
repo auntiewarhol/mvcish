@@ -1,5 +1,5 @@
 <?php
-namespace AuntieWarhol\MVCish\Util;
+namespace awPHP\MVCish\Util;
 
 # assumes we've installed vanilla/htmlawed;
 # provides the class wrapper they didn't.

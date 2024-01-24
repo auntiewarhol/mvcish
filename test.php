@@ -3,8 +3,21 @@
 // dumb junk test script. will do this right some day. maybe.
 
 require_once 'vendor/autoload.php';
-
-$MVCish = new \AuntieWarhol\MVCish\MVCish([
+/*
+function t(string $k,mixed $foo=new \awPHP\MVCish\E0E0()) {
+	if (!is_a($foo,'awPHP\MVCish\E0E0')) {
+		echo "will set\n";
+	}
+	else {
+		echo "will not set\n";
+	}
+}
+t('foo');
+t('foo',null);
+t('foo','bar');
+exit;
+*/
+$MVCish = new \awPHP\MVCish\MVCish([
 	'Environment' => isset($_SERVER['MVCISH']) ? $_SERVER['MVCISH'] : 'Local',
 	'appConfig' => ['foo' => 'bar']
 ]);
@@ -70,7 +83,7 @@ if ($view = $MVCish->View()) {
 	$view->setIllegalPropSneaky[] = true;
 }
 
-\AuntieWarhol\MVCish\Exception\ServerWarning::throwWarning($MVCish,"test the warning system");
+\awPHP\MVCish\Exception\ServerWarning::throwWarning($MVCish,"test the warning system");
 trigger_error("and a regular dumb error",E_USER_ERROR);
 echo "still here\n";
 

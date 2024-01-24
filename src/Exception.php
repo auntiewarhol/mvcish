@@ -1,5 +1,5 @@
 <?php
-namespace AuntieWarhol\MVCish;
+namespace awPHP\MVCish;
 class Exception extends \Exception {
 
 	const SERVER_ERROR      = 500;

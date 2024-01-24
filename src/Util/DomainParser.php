@@ -1,11 +1,11 @@
 <?php
-namespace AuntieWarhol\MVCish\Util;
+namespace awPHP\MVCish\Util;
 use Pdp\Rules;
 use Pdp\Domain;
 use Pdp\TopLevelDomains;
 use Symfony\Component\HttpClient\HttpClient;
 
-class DomainParser extends \AuntieWarhol\MVCish\Base {
+class DomainParser extends \awPHP\MVCish\Base {
 
 	const pslTTLsec = 86400; //24hr
 
@@ -18,13 +18,13 @@ class DomainParser extends \AuntieWarhol\MVCish\Base {
 	private array $_fromPathClass;
 	private array $_URI;
 
-	public function __construct(\AuntieWarhol\MVCish\MVCish $MVCish) {
+	public function __construct(\awPHP\MVCish\MVCish $MVCish) {
 		parent::__construct($MVCish);
 
 		$cacheDir = $this->MVCish()->getRuntimeDirectory().'.dpcache';
 		if (!(is_dir($cacheDir) && is_writable($cacheDir))) {
 			if (!mkdir($cacheDir,0755)) {
-				throw new \AuntieWarhol\MVCish\Exception\ServerError(
+				throw new \awPHP\MVCish\Exception\ServerError(
 					"Failed to find or create runtime cache directory for public domain listfiles");
 			}
 		}

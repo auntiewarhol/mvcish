@@ -1,11 +1,11 @@
 <?php
-namespace AuntieWarhol\MVCish\Environment;
+namespace awPHP\MVCish\Environment;
 
 class Factory {
 
 	public final static function getEnvironment($MVCish,$env): mixed {
 
-		if (empty($env)) return new \AuntieWarhol\MVCish\MVCish\Environment();
+		if (empty($env)) return new \awPHP\MVCish\MVCish\Environment();
 
 		$className = $env;
 		$classObj  = null;
@@ -22,7 +22,7 @@ class Factory {
 					$classObj = new $className($MVCish);
 				}
 				catch(\Throwable $e) {
-					throw new \AuntieWarhol\MVCish\Exception\ServerError(
+					throw new \awPHP\MVCish\Exception\ServerError(
 						'Failed to instantiate New '.$className.': '
 							. $e->getMessage());
 				}
@@ -30,17 +30,17 @@ class Factory {
 		}
 
 		if (isset($classObj)) {
-			if (is_a($obj,'AuntieWarhol\MVCish\Environment')) {
+			if (is_a($obj,'awPHP\MVCish\Environment')) {
 				return $obj;
 			}
-			throw new \AuntieWarhol\MVCish\Exception\ServerError(
-				'Class '.$className.' does not extend AuntieWarhol\MVCish\Environment');
+			throw new \awPHP\MVCish\Exception\ServerError(
+				'Class '.$className.' does not extend awPHP\MVCish\Environment');
 		}
 
-		// \AuntieWarhol\MVCish\Environment\$ShortName
+		// \awPHP\MVCish\Environment\$ShortName
 		else {
 
-			$className = 'AuntieWarhol\MVCish\Environment\\'.$env;
+			$className = 'awPHP\MVCish\Environment\\'.$env;
 			if (class_exists($className)) {
 				return new $className($MVCish); 
 			}
@@ -64,7 +64,7 @@ class Factory {
 				}
 			}
 		}
-		throw new \AuntieWarhol\MVCish\Exception\ServerError(
+		throw new \awPHP\MVCish\Exception\ServerError(
 			'Class '.$className.' not found in Environment::Factory');
 	}
 }

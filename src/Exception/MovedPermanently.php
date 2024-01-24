@@ -1,7 +1,7 @@
 <?php
-namespace AuntieWarhol\MVCish\Exception;
+namespace awPHP\MVCish\Exception;
 
-class MovedPermanently extends \AuntieWarhol\MVCish\Exception {
+class MovedPermanently extends \awPHP\MVCish\Exception {
 
 	public $internalRedirect  = false;
 
