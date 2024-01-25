@@ -186,7 +186,7 @@ abstract class Base {
 				$action = 'merge';
 				 if ($this->isListArray($value)) {
 					// but if $value is a list it's probably not what user intended so warn
-					Exception\ServerWarning::throwWarning('Merged list-array onto hash aray stored in '
+					Exception\ServerWarning::throwWarning($this->MVCish(),'Merged list-array onto hash aray stored in '
 						.static::class.'->'.$propname.'; something may be wrong');
 				}
 			}
@@ -199,7 +199,7 @@ abstract class Base {
 		else {
 			// but if hash, we have to arrify value and merge. probably not what user intended
 			$action = 'merge'; $value = [$value];
-			Exception\ServerWarning::throwWarning("Merged non-array ".gettype($value)
+			Exception\ServerWarning::throwWarning($this->MVCish(),"Merged non-array ".gettype($value)
 					.' value onto hash array stored in '
 					.static::class.'->'.$propname.'; something may be wrong');
 		}
