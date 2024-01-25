@@ -517,7 +517,7 @@ class MVCish {
 		// then return exception message unless it's a 500 server error
 		if ($e instanceof \awPHP\MVCish\Exception) {
 			$code = $e->getCode();
-			$this->Response(Response::cFromArray($this,[
+			$this->Response([
 				'success' => false,
 				'code'       => $e->getCode(),
 				"error"      => (($code == Exception::SERVER_ERROR) && !$this->isCLI()) ?
@@ -553,7 +553,7 @@ class MVCish {
 		}
 		// any other/unexpected exceptions return generic server error
 		else {
-			$this->Response(Response::cFromArray($this,[
+			$this->Response([
 				'success' => false,
 				'code'     => Exception::SERVER_ERROR,
 				"error"    => Exception::serverError,
@@ -605,10 +605,10 @@ class MVCish {
 	// RESPONSE ***************************************************************
 	
 	private $_response;
-	public function Response(Response|string $setKey=null,$set=null) {
-		// send a Response object and we become a setter
-		if (isset($setKey) && is_a($setKey,'awPHP\MVCish\Response')) {
-			$this->_response = $setKey;
+	public function Response(Response|array|string $setKey=null,$set=null) {
+		// send a Response object or an array and we become a setter
+		if (isset($setKey) && !is_string($setKey)) {
+			$this->_response = Response::factory($this,$setKey);
 		}
 		// we will always have a Response, tho the above might replace it
 		elseif (!$this->_response) {
