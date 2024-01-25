@@ -70,12 +70,16 @@ abstract class Base {
 	// do the repititve work in your accessors, eg:
 	//
 	//	protected int $code; // must be protected not private or Base can't see them
-	//	public function code(int $set=null):?int {
-	//		return $this->getSetScalar('code',$set);
+	//	public function code(int|E0E0\Parameter $value=new E0E0\Parameter()):?int {
+	//		return $this->getSetScalar('code',$value);
 	//	}
 	//	protected array $data = [];
-	//	public function data(string $key=null,$set=null,$setAll=null) {
-	//		return $this->getSetArray('data',$key,$set,$setAll);
+	//	public function data(null|string|array|E0E0\Parameter $key=null,mixed $value=new E0E0\Parameter(),bool $replace=true) {
+	//		return $this->getSetHashArray('data',$key,$value,$replace);
+	//	}
+	//	protected array $list = [];
+	//	public function list(mixed $value=null,bool $replace=true):?array {
+	//		return $this->getSetListArray('list',$value,$replace);
 	//	}
 	//
 	// will auto warn/err if you haven't defined $prop
@@ -85,54 +89,60 @@ abstract class Base {
 		return is_a($arg,'awPHP\MVCish\E0E0\Parameter');
 	}
 
+
 	protected function getSetScalar(string $prop,mixed $set=new E0E0\Parameter()):mixed {
 		if (!$this->isDefaultedParam($set)) $this->$prop = $set;
 		return $this->$prop ?? null;
 	}
-	protected function getSetArray(string $prop,null|string|array|E0E0\Parameter $key=new E0E0\Parameter(),mixed $set=new E0E0\Parameter(),string $action=null):mixed {
 
-		// ->getSetArray($prop): no key sent, ignore other args, return the whole array
+ 	// Hash = Associative Array. Yes, I'm from perl.
+	protected function getSetHashArray(string $prop,null|string|array|E0E0\Parameter $key=new E0E0\Parameter(),mixed $set=new E0E0\Parameter(),bool $replace=true):mixed {
+
+		if (!is_array($this->$prop))
+			throw new Exception\ServerError("Cannot use getSetHashArray on ".gettype($this->$prop)." property $prop");
+
+		// ->getSetHash($prop): no key sent, ignore other args, return the whole array
 		if (isset($key) && $this->isDefaultedParam($key)) return $this->$prop ?? null;
 
-		$action ??= 'replace';
-		// ->getSetArray($prop,NULL): send key=null to clear the whole array
+		// ->getSetHash($prop,NULL): send key=null to clear the whole array
 		if (!isset($key)) {
 			$this->$prop = null;
 		}
-		// ->getSetArray($prop,[],?$action): send key=array to replace or munge whole array
-		// option arg $action tells us to replace|merge|push
+		// ->getSetHash($prop,[],null,?$replace): send key=array to replace or munge whole array
+		// option bool arg $replace tells us whether to replace or merge|push, default replace.
 		elseif (is_array($key)) {
-			$this->$prop ??= [];
-			if     ($action == 'replace') { $this->$prop = $key; }
-			elseif ($action == 'merge')   { $this->$prop = array_merge($this->$prop,$key); }
+
+			// of course it's always replace if currently empty
+			if ($replace || !isset($this->$prop)) { $this->$prop = $key; }
+			else if ($action = $this->chooseMergePush($prop,$this->$prop,$key)) {
+
+				if      ($action == 'merge') { $this->$prop = array_merge($this->$prop,$key); }
+				else if ($action == 'push')  { $this->$prop[] = $key; }
+			}
 		}
-		else { // ->getSetArray($prop,'foo') $key is string
+		else { // ->getSetHash($prop,'foo') $key is string
 
 			if (!$this->isDefaultedParam($set)) { //if we actually got an arg
 
-				// ->getSetArray($prop,'foo',NULL): send set=null to clear the key
-				if (!isset($set)) $action = 'replace'; // NULL always replaces, action ignored
-
-				// ->getSetArray($prop,'foo',$set), same as:
-				// ->getSetArray($prop,'foo',$set,'replace'): send set=anything to set the key
-				if ($action == 'replace') { $this->$prop[$key] = $set; }
-
-				else {
-					// array-ify current if not already
-					if (!is_array($this->$prop[$key])) $this->$prop[$key] = [$this->$prop[$key]];
-
+				// ->getSetHash($prop,'foo',$set), same as:
+				// ->getSetHash($prop,'foo',$set,true): send set=anything to set the key
+				// ->getSetHash($prop,'foo',NULL): send set=null to clear the key
+				if ($replace || (!isset($set)) || (!isset($this->$prop[$key]))) {
+					$this->$prop[$key] = $set;
+				}
+				else if ($action = $this->chooseMergePush($prop.'['.$key.']',$this->$prop[$key],$set)) {
 					if ($action  == 'push')  {
 						// "push"-ing one array onto another is just a merge, right?
 						if (is_array($set)) { $action = 'merge'; }
 
 						// else push it. push it real good.
-						// ->getSetArray($prop,'foo',$scalarVal,'push')
+						// ->getSetHash($prop,'foo',$scalarVal,'push')
 						else                { $this->$prop[$key][] = $set; }
 					}
-					if ($action  == 'merge') {
-						if (!is_array($set)) { $set = [$set]; } //arrayify $set now if not already
-						// ->getSetArray($prop,'foo',$arrayVal,'merge'): send set=anything to set the key
-						$this->$prop[$key] = array_merge($this->$prop[$key],$set);
+					else if ($action  == 'merge') {
+						$this->$prop[$key] = array_merge($this->$prop[$key],
+							is_array($set) ? $set : [$set] //arrayify $set now if not already
+						);
 					}
 				}
 			}
@@ -140,16 +150,61 @@ abstract class Base {
 		}
 		return $this->$prop ?? null;
 	}
-	protected function getPushArray(string $prop,$set=null,array $setAll=null,array $opts=null):?array {
-		if (isset($setAll)) {
-			$this->$prop = $setAll;
-		}
-		else if (isset($set)) {
-			$this->$prop[] = $set;
-		}
-		return $this->$prop ?? null;
+
+	protected function getSetListArray(string $prop,mixed $value=new E0E0\Parameter(),bool $replace=true):mixed {
+		// Array = zero-indexed simple array
+		// ->getSetArray($prop) 		    // returns the whole $prop array
+		// ->getSetArray($prop,'foo')	    // pushes $foo onto $prop
+		// ->getSetArray($prop,['foo'])	    // replaces $prop with ['foo']
+		// ->getSetArray($prop,NULL)	    // sets $prop to null
+		// ->getSetArray($prop,$arr,false)  // pushes or merges $foo onto the $prop array, whatever $foo is. simple
+										    // array will merge. assoc array pushes entire $foo as element
+
+		// really just a convenience wrapper around the hash version to eliminate the extra parameter
+		return $this->getSetHashArray($prop,$value,null,$replace);
 	}
 
+
+	private function chooseMergePush(string $propname,mixed &$prop,mixed &$value):string {
+
+		if ((!empty($prop)) && !is_array($prop)) {
+			throw new Exception\ServerError("Cannot merge or push onto non-array "
+				.gettype($prop).' value stored in '.static::class.'->'.$propname);
+		}
+		// so $prop is an array, if $value is too, then choose
+		if (is_array($value)) {
+
+			// if $prop is a list (or empty)
+			if ($this->isListArray($prop)) {
+				// and $value is also a list, or $prop is empty [], then merge
+				$action = ($this->isListArray($value) || empty($prop)) ? 'merge' :
+					// but if $array is a hash then push
+					'push';
+			}
+			// if $prop is a hash (by def, not empty), then merge
+			else {
+				$action == 'merge';
+				 if ($this->isListArray($array)) {
+					// but if $array is a list it's probably not what user intended so warn
+					Exception\ServerWarning::throwWarning('Merged list-array onto hash aray stored in '
+						.static::class.'->'.$propname.'; something may be wrong');
+				}
+			}
+		}
+		// if $value is anything else
+		else if ($this->isListArray($prop)) {
+			// we can push it onto a simple array
+			$action = 'push';
+		}
+		else {
+			// but if hash, we have to arrify value and merge. probably not what user intended
+			$action = 'merge'; $value = [$value];
+			Exception\ServerWarning::throwWarning("Merged non-array ".gettype($value)
+					.' value onto hash array stored in '
+					.static::class.'->'.$propname.'; something may be wrong');
+		}
+		return $action;
+	}
 
 	//****************************************************************************
 	// Misc utils & conveniences
@@ -166,5 +221,15 @@ abstract class Base {
 				implode(', ',$array) . (($oxford && $remaining > 1) ? ',' : '') . " $conjunction "
 			: '') . $last;
 	}
+
+	// until we can use the 8.1 built-in
+	public static function isHashArray(array $arr):bool {
+        if ($arr === []) return false; // not yet at least
+        return !self::isListArray($arr);
+    }
+	public static function isListArray(array $arr):bool {
+        if ($arr === []) return true; // so far at least
+        return array_keys($arr) === range(0, count($arr) - 1);
+    }
 }
 ?>

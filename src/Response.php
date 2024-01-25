@@ -1,34 +1,34 @@
 <?php
 namespace awPHP\MVCish;
 
-class Response extends Base {
+class Response extends Base { //implements \ArrayAccess {
 
 	private const RESPONSEKEYS = [
 		'success'        => 'scalar',
 
-		'headers'        => 'array_push',
+		'headers'        => 'list',
 		'body'           => 'scalar',
-		'data'           => 'array',
-		'valid'          => 'valid',
+		'data'           => 'hash',
+		'valid'          => 'hash',
 		'object'         => 'scalar',
 
 		'code'           => 'scalar',
 		'error'          => 'scalar',
-		'messages'       => 'array',
+		'messages'       => 'hash',
 		'statusText'     => 'scalar',
-		'missing'        => 'array_push',
-		'invalid'        => 'array_push',
+		'missing'        => 'list',
+		'invalid'        => 'list',
 
 		'redirect'       => 'scalar',
 		'noPostRedirect' => 'scalar',
-		'redirectParams' => 'array',
+		'redirectParams' => 'hash',
 
 		'filename'       => 'scalar',
 		'streamHandle'   => 'scalar',
-		'rowCallbakc'    => 'scalar',
-		'rows'           => 'array_push',
+		'rowCallback'    => 'scalar',
+		'rows'           => 'list',
 
-		'Stash'          => 'array'
+		'Stash'          => 'hash'
 	];
 
 	public function __toString(): string  {
@@ -37,131 +37,158 @@ class Response extends Base {
 
 	public function jsonSerialize():array { return $this->toArray(); }
 
+	private array $_allData = [];
 	public function toArray():array {
-		$resp = [];
+		$this->_allData = [];
 		foreach(array_keys(self::RESPONSEKEYS) as $key) {
-			$resp[$key] = $this->$key();
+			$this->_allData[$key] = $this->$key();
 		}
-		return $resp;
+		return $this->_allData;
 	}
+
+	public function fromArray(array $array):array {
+		$this->_allData = $array;
+		foreach(array_keys(self::RESPONSEKEYS) as $key) {
+			if (isset($array[$key])) {
+				$this->$key($array[$key]);
+				unset($array[$key]);
+			}
+		}
+		if (!empty($array)) {
+			$this->data($array,null,false);
+		}
+		return $this->toArray();
+	}
+
+	//public function offsetSet($offset, $value): void {
+    //    if (is_null($offset)) {
+    //        $this->data[] = $value;
+    //    } else {
+    //        $this->container[$offset] = $value;
+    //    }
+	//}
+
+
 
 
 	//****************************************************************************			
 
 	protected bool $respSuccess;
-	public function success(bool|E0E0\Parameter $set=new E0E0\Parameter()):bool {
+	public function success(bool|E0E0\Parameter $value=new E0E0\Parameter()):bool {
 		// assume success until told otherwise
-		return $this->getSetScalar('respSuccess',$set) ?? true;
+		return $this->getSetScalar('respSuccess',$value) ?? true;
 	}
 
 
 	protected array $respHeaders = [];
-	public function headers(string $set=null,array $setAll=null,array $opts=null):?array {
-		return $this->getPushArray('respHeaders',$set,$setAll,$opts);
+	public function headers(string $value=new E0E0\Parameter(),bool $replace=true):?array {
+		return $this->getSetListArray('respHeaders',$value,$replace);
 	}
 
 	protected string $respBody;
-	public function body(string|E0E0\Parameter $set=new E0E0\Parameter()):?string {
-		return $this->getSetScalar('respBody',$set);
+	public function body(string|E0E0\Parameter $value=new E0E0\Parameter()):?string {
+		return $this->getSetScalar('respBody',$value);
 	}
 	public function hasBody():bool { return !empty($this->respBody); }
 
 	protected array $respData = [];
-	public function data(null|string|array|E0E0\Parameter $key=new E0E0\Parameter(),mixed $set=new E0E0\Parameter(),string $action=null):mixed {
-		return $this->getSetArray('respData',$key,$set,$action);
+	public function data(null|string|array|E0E0\Parameter $key=new E0E0\Parameter(),mixed $value=new E0E0\Parameter(),bool $replace=true):mixed {
+		return $this->getSetHashArray('respData',$key,$value,$replace);
 	}
 
 	protected array $respValid = [];
-	public function valid(null|string|array|E0E0\Parameter $key=new E0E0\Parameter(),mixed $set=new E0E0\Parameter(),string $action=null):mixed {
-		return $this->getSetArray('respValid',$key,$set,$action);
+	public function valid(null|string|array|E0E0\Parameter $key=new E0E0\Parameter(),mixed $value=new E0E0\Parameter(),bool $replace=true):mixed {
+		return $this->getSetHashArray('respValid',$key,$value,$replace);
 	}
 
 	protected object $respObject;
-	public function object(object $set=new E0E0\Parameter()):?object {
-		return $this->getSetScalar('respObject',$set);
+	public function object(object $value=new E0E0\Parameter()):?object {
+		return $this->getSetScalar('respObject',$value);
 	}
 
 
 	protected int $respCode;
-	public function code(int|E0E0\Parameter $set=new E0E0\Parameter()):?int {
-		return $this->getSetScalar('respCode',$set);
+	public function code(int|E0E0\Parameter $value=new E0E0\Parameter()):?int {
+		return $this->getSetScalar('respCode',$value);
 	}
 
 	protected string $respError;
-	public function error(string|E0E0\Parameter $set=new E0E0\Parameter()):?string {
-		return $this->getSetScalar('respError',$set);
+	public function error(string|E0E0\Parameter $value=new E0E0\Parameter()):?string {
+		return $this->getSetScalar('respError',$value);
 	}
 
 
 	protected array $respMessages = [];
-	public function messages(null|string|array|E0E0\Parameter $key=new E0E0\Parameter(),mixed $set=new E0E0\Parameter(),string $action=null):array {
-		return $this->getSetArray('respMessages',$key,$set,$action) ?? [];
+	public function messages(null|string|array|E0E0\Parameter $key=new E0E0\Parameter(),mixed $value=new E0E0\Parameter(),bool $replace=true):array {
+		return $this->getSetHashArray('respMessages',$key,$value,$replace) ?? [];
 	}
-	public function messageSuccess(string|bool|array $set) {
-		return $this->messages('success', $set,is_array($set) ? 'merge' : 'replace');
+	// since we know these are simple strings and never arrays of arrays, eliminate
+	// the bool and assume if we got an array, it's a replace, else a push.
+	public function messageSuccess(string|array $value) {
+		return $this->messages('success', $value, is_array($value) ? true : false);
 	}
-	public function messageError(string|bool|array $set) {
-		return $this->messages('error',   $set,is_array($set) ? 'merge' : 'replace');
+	public function messageError(string|array $value) {
+		return $this->messages('error',   $value, is_array($value) ? true : false);
 	}
-	public function messageInfo(string|bool|array $set) {
-		return $this->messages('info',    $set,is_array($set) ? 'merge' : 'replace');
+	public function messageInfo(string|array $value) {
+		return $this->messages('info',    $value, is_array($value) ? true : false);
 	}
-	public function messageWarning(string|bool|array $set) {
-		return $this->messages('warning', $set,is_array($set) ? 'merge' : 'replace');
+	public function messageWarning(string|array $value) {
+		return $this->messages('warning', $value, is_array($value) ? true : false);
 	}
 
 
 	protected string $respStatusText;
-	public function statusText(string|E0E0\Parameter $set=new E0E0\Parameter()):?string {
-		return $this->getSetScalar('respStatusText',$set);
+	public function statusText(string|E0E0\Parameter $value=new E0E0\Parameter()):?string {
+		return $this->getSetScalar('respStatusText',$value);
 	}
 
 	protected array $respMissing = [];
-	public function missing(string $set=null,array $setAll=null,array $opts=null):?array {
-		return $this->getPushArray('respMissing',$set,$setAll,$opts);
+	public function missing(string|E0E0\Parameter $value=new E0E0\Parameter(),bool $replace=true):?array {
+		return $this->getSetListArray('respMissing',$value,$replace);
 	}
 
 	protected array $respInvalid = [];
-	public function invalid(string $set=null,array $setAll=null,array $opts=null):?array {
-		return $this->getPushArray('respInvalid',$set,$setAll,$opts);
+	public function invalid(string|E0E0\Parameter $value=new E0E0\Parameter(),bool $replace=true):?array {
+		return $this->getSetListArray('respInvalid',$value,$replace);
 	}
 
 
 	protected string $respRedirect;
-	public function redirect(string|URI|E0E0\Parameter $set=new E0E0\Parameter()):mixed {
-		return $this->getSetScalar('respRedirect',$set);
+	public function redirect(string|URI|E0E0\Parameter $value=new E0E0\Parameter()):mixed {
+		return $this->getSetScalar('respRedirect',$value);
 	}
 	public function hasRedirect():bool { return !empty($this->redirect); }
 
 	protected string $respNoPostRedirect;
-	public function noPostRedirect(bool|E0E0\Parameter $set=new E0E0\Parameter()):?bool {
-		return $this->getSetScalar('respNoPostRedirect',$set);
+	public function noPostRedirect(bool|E0E0\Parameter $value=new E0E0\Parameter()):?bool {
+		return $this->getSetScalar('respNoPostRedirect',$value);
 	}
 
 	protected array $respRedirectParams = [];
-	public function redirectParams(null|string|array|E0E0\Parameter $key=new E0E0\Parameter(),mixed $set=new E0E0\Parameter(),string $action=null):?array {
-		return $this->getSetArray('respRedirectParams',$key,$set,$action);
+	public function redirectParams(null|string|array|E0E0\Parameter $key=new E0E0\Parameter(),mixed $value=new E0E0\Parameter(),bool $replace=true):?array {
+		return $this->getSetHashArray('respRedirectParams',$key,$value,$replace);
 	}
 
 
 	protected string $respFilename;
-	public function filename(string|E0E0\Parameter $set=new E0E0\Parameter()):?string {
-		return $this->getSetScalar('respFilename',$set);
+	public function filename(string|E0E0\Parameter $value=new E0E0\Parameter()):?string {
+		return $this->getSetScalar('respFilename',$value);
 	}
 
-	protected mixed $respStreanHandle;
-	public function streamHandle(mixed $set=new E0E0\Parameter()):mixed {
-		return $this->getSetScalar('respStreamHandle',$set);
+	protected mixed $respStreamHandle;
+	public function streamHandle(mixed $value=new E0E0\Parameter()):mixed {
+		return $this->getSetScalar('respStreamHandle',$value);
 	}
 
 	protected mixed $respRowCallback;
-	public function rowCallback(mixed $set=new E0E0\Parameter()):mixed {
-		return $this->getSetScalar('respRowCallback',$set);
+	public function rowCallback(mixed $value=new E0E0\Parameter()):mixed {
+		return $this->getSetScalar('respRowCallback',$value);
 	}
 
 	protected array $respRows = [];
-	public function rows(array $set=null,array $setAll=null,array $opts=null):?array {
-		return $this->getPushArray('respRows',$set,$setAll,$opts);
+	public function rows(array|E0E0\Parameter $value=new E0E0\Parameter(),bool $replace=true):?array {
+		return $this->getSetListArray('respRows',$value,$replace);
 	}
 
 
@@ -169,14 +196,14 @@ class Response extends Base {
 	// could just use 'data', but this keeps things out of your form data.
 
 	protected array $respStash = [];
-	public function Stash(null|string|array|E0E0\Parameter $key=new E0E0\Parameter(),mixed $set=new E0E0\Parameter(),string $action=null):?array {
-		return $this->getSetArray('respStash',$key,$set,$action) ?? [];
+	public function Stash(null|string|array|E0E0\Parameter $key=new E0E0\Parameter(),mixed $value=new E0E0\Parameter(),bool $replace=true):?array {
+		return $this->getSetHashArray('respStash',$key,$value,$replace) ?? [];
 	}
 
 	//****************************************************************************
 	//****************************************************************************
 
-	public static function fromString(\awPHP\MVCish\MVCish $MVCish,string $string):self {
+	public static function cFromString(\awPHP\MVCish\MVCish $MVCish,string $string):self {
 		$response = new self($MVCish);
 
 		$bool = null;
@@ -191,50 +218,32 @@ class Response extends Base {
 		return $response;
 	}
 
-	public static function fromArray(\awPHP\MVCish\MVCish $MVCish,array $data):self {
+	public static function cFromArray(\awPHP\MVCish\MVCish $MVCish,array $data):self {
 		$response = new self($MVCish);
+		$response->fromArray($data);
 
-		foreach(self::RESPONSEKEYS as $key => $type) {
+		if ((!isset($data['success'])) || !is_bool($data['success'])) {
 
 			// if 'success' not explicity found, assume true but bark
-			if ($key == 'success') {
-				$bool = null;
-				if (isset($data[$key])) {
-					if (!self::parseBool($data[$key],$bool)) {
-						Exception\ServerWarning::throwWarning($MVCish,
-							"Could not parse bool from 'success' key in response data; "
-							."assuming success, but something may be wrong");
-					}
-				}
-				else {
+			$bool = null;
+			if (isset($data['success'])) {
+				if (!self::parseBool($data['success'],$bool)) {
 					Exception\ServerWarning::throwWarning($MVCish,
-						"Could not find 'success' key in response data; "
+						"Could not parse bool from 'success' key in response data; "
 						."assuming success, but something may be wrong");
 				}
-				$data[$key] = isset($bool) ? $bool : true;
 			}
-			if (isset($data[$key])) {
-				if ($type == 'scalar') {
-					$response->$key($data[$key]);
-				}
-				else if ($type == 'array') {
-					$response->$key($data[$key]);
-				}
-				else if ($type == 'array_push') {
-					$response->$key(null,$data[$key]);
-				}
-				unset($data[$key]);
+			else {
+				Exception\ServerWarning::throwWarning($MVCish,
+					"Could not find 'success' key in response data; "
+					."assuming success, but something may be wrong");
 			}
-		}
-
-		if ((!$response->data()) & !empty($data)) {
-			// if anything left, take that as data if not set
-			$response->data(null,null,$data);
+			$data[$key] = isset($bool) ? $bool : true;
 		}
 		return $response;
 	}
 
-	public static function fromForeignObject(\awPHP\MVCish\MVCish $MVCish,object $obj):self {
+	public static function cFromForeignObject(\awPHP\MVCish\MVCish $MVCish,object $obj):self {
 		$response = new self($MVCish);
 		$response->object($obj);
 
@@ -264,14 +273,14 @@ class Response extends Base {
 		if (is_a($cResponse,static::class)) return $cResponse;
 
 		// either a parseable bool string or literal text response
-		if (is_string($cResponse)) return self::fromString($MVCish,$cResponse);
+		if (is_string($cResponse)) return self::cFromString($MVCish,$cResponse);
 
 		// old school and/or json data.
-		if (is_array($cResponse)) return self::fromArray($MVCish,$cResponse);
+		if (is_array($cResponse)) return self::cFromArray($MVCish,$cResponse);
 
 		// they responded with some not-Response object.
 		// It probably knows how to json serialize itself.
-		if (is_object($cResponse)) return self::fromForeignObect($MVCish,$cResponse);
+		if (is_object($cResponse)) return self::cFromForeignObect($MVCish,$cResponse);
 
 		// not responding at all may return 1. Treat 1 or 0 as bool.
 		// any other int fall through to success but warn.

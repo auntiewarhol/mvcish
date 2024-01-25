@@ -517,7 +517,7 @@ class MVCish {
 		// then return exception message unless it's a 500 server error
 		if ($e instanceof \awPHP\MVCish\Exception) {
 			$code = $e->getCode();
-			$this->Response(Response::fromArray($this,[
+			$this->Response(Response::cFromArray($this,[
 				'success' => false,
 				'code'       => $e->getCode(),
 				"error"      => (($code == Exception::SERVER_ERROR) && !$this->isCLI()) ?
@@ -553,7 +553,7 @@ class MVCish {
 		}
 		// any other/unexpected exceptions return generic server error
 		else {
-			$this->Response(Response::fromArray($this,[
+			$this->Response(Response::cFromArray($this,[
 				'success' => false,
 				'code'     => Exception::SERVER_ERROR,
 				"error"    => Exception::serverError,
