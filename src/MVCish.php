@@ -524,7 +524,7 @@ class MVCish {
 					Exception::serverError : $e->getMessage(),
 				'messages'   => ['error' => $e->getMessage()],
 				'statusText' => $e->statusText()
-			]));
+			]);
 			// custom method on our Exceptions to tell us if/where we should redirect
 			if ($redirect = $e->getRedirectUrl()) {
 
@@ -559,7 +559,7 @@ class MVCish {
 				"error"    => Exception::serverError,
 				'messages' => ['error' => Exception::serverError],
 				'statusText' => Exception::serverError
-			]));
+			]);
 		}
 		return $this->processResponse();
 	}
