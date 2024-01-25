@@ -1,7 +1,7 @@
 <?php
 namespace awPHP\MVCish;
 
-class Response extends Base { //implements \ArrayAccess {
+class Response extends Base implements \ArrayAccess {
 
 	private const RESPONSEKEYS = [
 		'success'        => 'scalar',
@@ -46,7 +46,7 @@ class Response extends Base { //implements \ArrayAccess {
 		return $this->_allData;
 	}
 
-	public function fromArray(array $array):array {
+	public function fromArray(array $array):self {
 		$this->_allData = $array;
 		foreach(array_keys(self::RESPONSEKEYS) as $key) {
 			if (isset($array[$key])) {
@@ -54,20 +54,43 @@ class Response extends Base { //implements \ArrayAccess {
 				unset($array[$key]);
 			}
 		}
-		if (!empty($array)) {
-			$this->data($array,null,false);
+		if (!empty($array)) { //anything left, send to Stash
+			$this->Stash($array,null,false);
 		}
-		return $this->toArray();
+		return $this;
 	}
 
-	//public function offsetSet($offset, $value): void {
-    //    if (is_null($offset)) {
-    //        $this->data[] = $value;
-    //    } else {
-    //        $this->container[$offset] = $value;
-    //    }
-	//}
-
+	// undocumented and not encouraged, but need it for the OG Client App:
+	// can treat $response like an array:
+	// $response = $MVCish->Response(); $response['success'] = true;
+	public function offsetExists (mixed $offset):bool {
+		if (array_key_exists($offset,self::RESPONSEKEYS)) {
+			return NULL != $self->$offset();
+		}
+		return NULL != $self->Stash($offset);
+	}
+	public function offsetGet(mixed $offset):mixed {
+		if (array_key_exists($offset,self::RESPONSEKEYS)) {
+			return $self->$offset();
+		}
+		return $self->Stash($offset);
+	}
+	public function offsetSet(mixed $offset, mixed $value):void {
+		if (array_key_exists($offset,self::RESPONSEKEYS)) {
+			$self->$offset($value);
+		}
+		else {
+			$self->Stash($offset,$value);
+		}
+	}
+	public function offsetUnset(mixed $offset):void	{
+		if (array_key_exists($offset,self::RESPONSEKEYS)) {
+			$self->$offset(NULL);
+		}
+		else {
+			$self->Stash($offset,NULL);
+		}
+	}
 
 
 
