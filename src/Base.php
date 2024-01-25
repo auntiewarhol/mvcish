@@ -183,7 +183,7 @@ abstract class Base {
 			}
 			// if $prop is a hash (by def, not empty), then merge
 			else {
-				$action == 'merge';
+				$action = 'merge';
 				 if ($this->isListArray($array)) {
 					// but if $array is a list it's probably not what user intended so warn
 					Exception\ServerWarning::throwWarning('Merged list-array onto hash aray stored in '
