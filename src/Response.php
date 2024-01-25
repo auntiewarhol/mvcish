@@ -65,30 +65,30 @@ class Response extends Base implements \ArrayAccess {
 	// $response = $MVCish->Response(); $response['success'] = true;
 	public function offsetExists (mixed $offset):bool {
 		if (array_key_exists($offset,self::RESPONSEKEYS)) {
-			return NULL != $self->$offset();
+			return NULL != $this->$offset();
 		}
-		return NULL != $self->Stash($offset);
+		return NULL != $this->Stash($offset);
 	}
 	public function offsetGet(mixed $offset):mixed {
 		if (array_key_exists($offset,self::RESPONSEKEYS)) {
-			return $self->$offset();
+			return $this->$offset();
 		}
-		return $self->Stash($offset);
+		return $this->Stash($offset);
 	}
 	public function offsetSet(mixed $offset, mixed $value):void {
 		if (array_key_exists($offset,self::RESPONSEKEYS)) {
-			$self->$offset($value);
+			$this->$offset($value);
 		}
 		else {
-			$self->Stash($offset,$value);
+			$this->Stash($offset,$value);
 		}
 	}
 	public function offsetUnset(mixed $offset):void	{
 		if (array_key_exists($offset,self::RESPONSEKEYS)) {
-			$self->$offset(NULL);
+			$this->$offset(NULL);
 		}
 		else {
-			$self->Stash($offset,NULL);
+			$this->Stash($offset,NULL);
 		}
 	}
 
