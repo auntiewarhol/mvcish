@@ -90,13 +90,13 @@ abstract class Base {
 	}
 
 
-	protected function getSetScalar(string $prop,mixed $set=new E0E0\Parameter()):mixed {
-		if (!$this->isDefaultedParam($set)) $this->$prop = $set;
+	protected function getSetScalar(string $prop,mixed $value=new E0E0\Parameter()):mixed {
+		if (!$this->isDefaultedParam($value)) $this->$prop = $value;
 		return $this->$prop ?? null;
 	}
 
  	// Hash = Associative Array. Yes, I'm from perl.
-	protected function getSetHashArray(string $prop,null|string|array|E0E0\Parameter $key=new E0E0\Parameter(),mixed $set=new E0E0\Parameter(),bool $replace=true):mixed {
+	protected function getSetHashArray(string $prop,null|string|array|E0E0\Parameter $key=new E0E0\Parameter(),mixed $value=new E0E0\Parameter(),bool $replace=true):mixed {
 
 		if (!is_array($this->$prop))
 			throw new Exception\ServerError("Cannot use getSetHashArray on ".gettype($this->$prop)." property $prop");
@@ -122,26 +122,26 @@ abstract class Base {
 		}
 		else { // ->getSetHash($prop,'foo') $key is string
 
-			if (!$this->isDefaultedParam($set)) { //if we actually got an arg
+			if (!$this->isDefaultedParam($value)) { //if we actually got an arg
 
-				// ->getSetHash($prop,'foo',$set), same as:
-				// ->getSetHash($prop,'foo',$set,true): send set=anything to set the key
+				// ->getSetHash($prop,'foo',$value), same as:
+				// ->getSetHash($prop,'foo',$value,true): send set=anything to set the key
 				// ->getSetHash($prop,'foo',NULL): send set=null to clear the key
-				if ($replace || (!isset($set)) || (!isset($this->$prop[$key]))) {
-					$this->$prop[$key] = $set;
+				if ($replace || (!isset($value)) || (!isset($this->$prop[$key]))) {
+					$this->$prop[$key] = $value;
 				}
-				else if ($action = $this->chooseMergePush($prop.'['.$key.']',$this->$prop[$key],$set)) {
+				else if ($action = $this->chooseMergePush($prop.'['.$key.']',$this->$prop[$key],$value)) {
 					if ($action  == 'push')  {
 						// "push"-ing one array onto another is just a merge, right?
-						if (is_array($set)) { $action = 'merge'; }
+						if (is_array($value)) { $action = 'merge'; }
 
 						// else push it. push it real good.
 						// ->getSetHash($prop,'foo',$scalarVal,'push')
-						else                { $this->$prop[$key][] = $set; }
+						else                { $this->$prop[$key][] = $value; }
 					}
 					else if ($action  == 'merge') {
 						$this->$prop[$key] = array_merge($this->$prop[$key],
-							is_array($set) ? $set : [$set] //arrayify $set now if not already
+							is_array($value) ? $value : [$value] //arrayify $value now if not already
 						);
 					}
 				}
@@ -184,8 +184,8 @@ abstract class Base {
 			// if $prop is a hash (by def, not empty), then merge
 			else {
 				$action = 'merge';
-				 if ($this->isListArray($array)) {
-					// but if $array is a list it's probably not what user intended so warn
+				 if ($this->isListArray($value)) {
+					// but if $value is a list it's probably not what user intended so warn
 					Exception\ServerWarning::throwWarning('Merged list-array onto hash aray stored in '
 						.static::class.'->'.$propname.'; something may be wrong');
 				}
