@@ -474,7 +474,7 @@ class Validator extends \awPHP\MVCish\Base {
 	}
 
 	//****************************************************************************
-	public function Response(array $definition,array $source=null,bool $cache=true):array {
+	public function Response(array $definition,array $source=null,bool $cache=true):Response {
 		if ($response = $this->validateForm($definition,$source,$cache)) {
 			return Response::cFromArray($this->MVCish(),$response);
 		}
