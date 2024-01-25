@@ -43,6 +43,14 @@ class Response extends Base implements \ArrayAccess {
 		foreach(array_keys(self::RESPONSEKEYS) as $key) {
 			$this->_allData[$key] = $this->$key();
 		}
+		// Anything in Stash also goes to main array, so long as it does not
+		// conflict with a primary Response property.
+		if ($stash = $this->Stash()) {
+			$this->_allData(array_merge($this->_allData,
+				array_filter($stash,function($v,$k) {
+					return array_key_exists($k,self::RESPONSEKEYS) ? false : true;
+				},ARRAY_FILTER_USE_BOTH)));
+		}
 		return $this->_allData;
 	}
 
