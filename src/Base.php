@@ -79,12 +79,12 @@ abstract class Base {
 
 	// until we can use the 8.1 built-in
 	public static function isHashArray(array|pArray $arr):bool {
-		if (is_a($arr,pArray)) return $arr->isHash();
+		if ($arr instanceof pArray) return $arr->isHash();
         if ($arr === []) return false; // not yet at least
         return !self::isListArray($arr);
     }
 	public static function isListArray(array|pArray $arr):bool {
-		if (is_a($arr,pArray)) return $arr->isList();
+		if ($arr instanceof pArray) return $arr->isList();
         if ($arr === []) return true; // so far at least
         return array_keys($arr) === range(0, count($arr) - 1);
     }
