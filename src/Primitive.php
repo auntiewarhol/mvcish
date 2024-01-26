@@ -8,7 +8,7 @@ abstract class Primitive {
 			if (isset($value) || !isset($this->value)) $this->value = $value;
 		}
 	}
-	public function __toString():string { strval($this->value ?? '') ?? ''; }
+	public function __toString():string { return strval($this->value) ?? ''; }
 
 	public function value($value=null) {
 		if (isset($value) || !isset($this->value)) $this->value = $value;
