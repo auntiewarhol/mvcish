@@ -58,8 +58,8 @@ trait Accessors {
 			if ($replace || !isset($this->$prop)) { $this->$prop = $key; }
 			else if ($action = $this->chooseMergePush($prop,$this->$prop,$key)) {
 
-				if      ($action == 'merge') { $this->$prop = array_merge($this->$prop,$key); }
-				else if ($action == 'push')  { $this->$prop[] = $key; }
+				if      ($action == 'merge') { $this->$prop = pArray::array_merge($this->$prop,$key); }
+				else if ($action == 'push')  { pArray::array_push($this->$prop,$key); }
 			}
 		}
 		else { // ->getSetHash($prop,'foo') $key is string
@@ -73,19 +73,12 @@ trait Accessors {
 					$this->$prop[$key] = $value;
 				}
 				else if ($action = $this->chooseMergePush($prop.'['.$key.']',$this->$prop[$key],$value)) {
-					if ($action  == 'push')  {
-						// "push"-ing one array onto another is just a merge, right?
-						if (is_array($value)) { $action = 'merge'; }
-
-						// else push it. push it real good.
-						// ->getSetHash($prop,'foo',$scalarVal,'push')
-						else                { $this->$prop[$key][] = $value; }
-					}
-					else if ($action  == 'merge') {
-						$this->$prop[$key] = array_merge($this->$prop[$key],
-							is_array($value) ? $value : [$value] //arrayify $value now if not already
+					if ($action  == 'merge') {
+						$this->$prop[$key] = pArray::array_merge($this->$prop[$key],
+							is_countable($value) ? $value : [$value] //arrayify $value now if not already
 						);
 					}
+					elseif ($action  == 'push') { pArray::array_push($this->$prop[$key],$value); }
 				}
 			}
 			return $this->$prop[$key] ?? null;

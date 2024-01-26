@@ -77,5 +77,28 @@ class pArray extends \awPHP\MVCish\Primitive implements \ArrayAccess,\Countable,
 
 	// make callable like: array_function($this())
 	public function &__invoke() { return $this->value; }
+
+	// add array_* functions as methods $this->array_keys(), etc
+	public function __call($func, $argv) {
+        if (!is_callable($func) || substr($func, 0, 6) !== 'array_') {
+            throw new BadMethodCallException(__CLASS__.'->'.$func);
+        }
+		$ref = &$this->value;
+        return call_user_func_array($func,array_merge([&$ref],$argv));
+    }
+
+	// make Primitive\pArray::array_* functions 
+	// that work with arg lists which may include pArrays
+	public static function __callStatic($func, $argv) {
+        if (!is_callable($func) || substr($func, 0, 6) !== 'array_') {
+            throw new BadMethodCallException(__CLASS__.'->'.$func);
+        }
+		$newArgs=[];
+		foreach ($argv as $arg) {
+			if ($arg instanceof self) { $ref = &$arg(); $newArgs[] = &$ref; }
+			else { $newArgs[] = $arg; }
+		}
+        return call_user_func_array($func,$newArgs);
+    }
 }
 ?>

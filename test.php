@@ -3,7 +3,6 @@
 // dumb junk test script. will do this right some day. maybe.
 
 require_once 'vendor/autoload.php';
-
 /*
 $a = new \awPHP\MVCish\Primitive\pArray([1,2,3]);
 echo "a=".print_r($a,true)."\n";
@@ -16,10 +15,24 @@ echo "munge= ".print_r($a->value(),true)."\n";
 $a->value(array_merge($a(),[5,6]));
 echo "merge= ".print_r($a->value(),true)."\n";
 array_push($t = &$a(),7,8);
-echo "push = ".print_r($a->value(),true)."\n";
+echo "push1 = ".print_r($a->value(),true)."\n";
 //echo "keys = ".print_r(array_keys($a()),true)."\n";
+$a->array_push(9);
+echo "push2 = ".print_r($a->value(),true)."\n";
+echo "keys  = ".print_r($a->array_keys(),true)."\n";
+
+\awPHP\MVCish\Primitive\pArray::array_push($a,10);
+echo "push3= ".print_r($a->value(),true)."\n";
+
+$a->value(\awPHP\MVCish\Primitive\pArray::array_merge($a,[11]));
+echo "merge2= ".print_r($a->value(),true)."\n";
+
+\awPHP\MVCish\Primitive\pArray::array_push($a,[12]);
+echo "push4= ".print_r($a->value(),true)."\n";
+
 exit;
 */
+
 
 $MVCish = new \awPHP\MVCish\MVCish([
 	'Environment' => isset($_SERVER['MVCISH']) ? $_SERVER['MVCISH'] : 'Local',
