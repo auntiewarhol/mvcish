@@ -1,7 +1,9 @@
 <?php
 namespace awPHP\MVCish;
+use \awPHP\MVCish\MVCish;
+use \awPHP\MVCish\E0E0\Parameter;
 
-class Response extends Base implements \ArrayAccess {
+class Response extends Base implements \ArrayAccess,\Countable,\IteratorAggregate,\Serializable {
 
 	private const RESPONSEKEYS = [
 		'success'        => 'scalar',
@@ -99,58 +101,76 @@ class Response extends Base implements \ArrayAccess {
 			$this->Stash($offset,NULL);
 		}
 	}
+	public function count():int {
+		return count($this->to_Array());
+	}
+	public function getIterator(): \Traversable {
+		return new \ArrayIterator($this->toArray());
+	}
+	public function serialize(): ?string {
+		return serialize($this->toArray());
+	}
+	public function unserialize(string $data): void {
+		$this->fromArray($data);
+	}
+	public function __serialize(): array {
+		return $this->toArray();
+	}
+	public function __unserialize(array $data): void {
+		$this->fromArray($data);
+	}
 
 
 
 	//****************************************************************************			
 
 	protected bool $respSuccess;
-	public function success(bool|E0E0\Parameter $value=new E0E0\Parameter()):bool {
+	public function success(bool|Parameter $value=new Parameter()):bool {
 		// assume success until told otherwise
 		return $this->getSetScalar('respSuccess',$value) ?? true;
 	}
 
 
 	protected array $respHeaders = [];
-	public function headers(string $value=new E0E0\Parameter(),bool $replace=true):?array {
+	public function headers(string $value=new Parameter(),bool $replace=true):?array {
 		return $this->getSetListArray('respHeaders',$value,$replace);
 	}
 
 	protected string $respBody;
-	public function body(string|E0E0\Parameter $value=new E0E0\Parameter()):?string {
+	public function body(string|Parameter $value=new Parameter()):?string {
 		return $this->getSetScalar('respBody',$value);
 	}
 	public function hasBody():bool { return !empty($this->respBody); }
 
 	protected array $respData = [];
-	public function data(null|string|array|E0E0\Parameter $key=new E0E0\Parameter(),mixed $value=new E0E0\Parameter(),bool $replace=true):mixed {
+	public function data(null|string|array|Parameter $key=new Parameter(),mixed $value=new Parameter(),bool $replace=true):mixed {
 		return $this->getSetHashArray('respData',$key,$value,$replace);
 	}
 
 	protected array $respValid = [];
-	public function valid(null|string|array|E0E0\Parameter $key=new E0E0\Parameter(),mixed $value=new E0E0\Parameter(),bool $replace=true):mixed {
+	public function valid(null|string|array|Parameter $key=new Parameter(),mixed $value=new Parameter(),bool $replace=true):mixed {
 		return $this->getSetHashArray('respValid',$key,$value,$replace);
 	}
 
 	protected object $respObject;
-	public function object(object $value=new E0E0\Parameter()):?object {
+	public function object(object $value=new Parameter()):?object {
 		return $this->getSetScalar('respObject',$value);
 	}
 
 
 	protected int $respCode;
-	public function code(int|E0E0\Parameter $value=new E0E0\Parameter()):?int {
+	public function code(int|Parameter $value=new Parameter()):?int {
 		return $this->getSetScalar('respCode',$value);
 	}
 
 	protected string $respError;
-	public function error(string|E0E0\Parameter $value=new E0E0\Parameter()):?string {
+	public function error(string|Parameter $value=new Parameter()):?string {
 		return $this->getSetScalar('respError',$value);
 	}
 
 
 	protected array $respMessages = [];
-	public function messages(null|string|array|E0E0\Parameter $key=new E0E0\Parameter(),mixed $value=new E0E0\Parameter(),bool $replace=true):array {
+	public function messages(null|string|array|Parameter $key=new Parameter(),mixed $value=new Parameter(),bool $replace=true):array {
 		return $this->getSetHashArray('respMessages',$key,$value,$replace) ?? [];
 	}
 	// since we know these are simple strings and never arrays of arrays, eliminate
@@ -170,55 +190,55 @@ class Response extends Base implements \ArrayAccess {
 
 
 	protected string $respStatusText;
-	public function statusText(string|E0E0\Parameter $value=new E0E0\Parameter()):?string {
+	public function statusText(string|Parameter $value=new Parameter()):?string {
 		return $this->getSetScalar('respStatusText',$value);
 	}
 
 	protected array $respMissing = [];
-	public function missing(string|E0E0\Parameter $value=new E0E0\Parameter(),bool $replace=true):?array {
+	public function missing(string|Parameter $value=new Parameter(),bool $replace=true):?array {
 		return $this->getSetListArray('respMissing',$value,$replace);
 	}
 
 	protected array $respInvalid = [];
-	public function invalid(string|E0E0\Parameter $value=new E0E0\Parameter(),bool $replace=true):?array {
+	public function invalid(string|Parameter $value=new Parameter(),bool $replace=true):?array {
 		return $this->getSetListArray('respInvalid',$value,$replace);
 	}
 
 
 	protected string $respRedirect;
-	public function redirect(string|URI|E0E0\Parameter $value=new E0E0\Parameter()):mixed {
+	public function redirect(string|URI|Parameter $value=new Parameter()):mixed {
 		return $this->getSetScalar('respRedirect',$value);
 	}
 	public function hasRedirect():bool { return !empty($this->redirect); }
 
 	protected string $respNoPostRedirect;
-	public function noPostRedirect(bool|E0E0\Parameter $value=new E0E0\Parameter()):?bool {
+	public function noPostRedirect(bool|Parameter $value=new Parameter()):?bool {
 		return $this->getSetScalar('respNoPostRedirect',$value);
 	}
 
 	protected array $respRedirectParams = [];
-	public function redirectParams(null|string|array|E0E0\Parameter $key=new E0E0\Parameter(),mixed $value=new E0E0\Parameter(),bool $replace=true):?array {
+	public function redirectParams(null|string|array|Parameter $key=new Parameter(),mixed $value=new Parameter(),bool $replace=true):?array {
 		return $this->getSetHashArray('respRedirectParams',$key,$value,$replace);
 	}
 
 
 	protected string $respFilename;
-	public function filename(string|E0E0\Parameter $value=new E0E0\Parameter()):?string {
+	public function filename(string|Parameter $value=new Parameter()):?string {
 		return $this->getSetScalar('respFilename',$value);
 	}
 
 	protected mixed $respStreamHandle;
-	public function streamHandle(mixed $value=new E0E0\Parameter()):mixed {
+	public function streamHandle(mixed $value=new Parameter()):mixed {
 		return $this->getSetScalar('respStreamHandle',$value);
 	}
 
 	protected mixed $respRowCallback;
-	public function rowCallback(mixed $value=new E0E0\Parameter()):mixed {
+	public function rowCallback(mixed $value=new Parameter()):mixed {
 		return $this->getSetScalar('respRowCallback',$value);
 	}
 
 	protected array $respRows = [];
-	public function rows(array|E0E0\Parameter $value=new E0E0\Parameter(),bool $replace=true):?array {
+	public function rows(array|Parameter $value=new Parameter(),bool $replace=true):?array {
 		return $this->getSetListArray('respRows',$value,$replace);
 	}
 
@@ -227,14 +247,14 @@ class Response extends Base implements \ArrayAccess {
 	// could just use 'data', but this keeps things out of your form data.
 
 	protected array $respStash = [];
-	public function Stash(null|string|array|E0E0\Parameter $key=new E0E0\Parameter(),mixed $value=new E0E0\Parameter(),bool $replace=true):?array {
+	public function Stash(null|string|array|Parameter $key=new Parameter(),mixed $value=new Parameter(),bool $replace=true):?array {
 		return $this->getSetHashArray('respStash',$key,$value,$replace) ?? [];
 	}
 
 	//****************************************************************************
 	//****************************************************************************
 
-	public static function cFromString(\awPHP\MVCish\MVCish $MVCish,string $string):self {
+	public static function cFromString(MVCish $MVCish,string $string):self {
 		$response = new self($MVCish);
 
 		$bool = null;
@@ -249,7 +269,7 @@ class Response extends Base implements \ArrayAccess {
 		return $response;
 	}
 
-	public static function cFromArray(\awPHP\MVCish\MVCish $MVCish,array $data):self {
+	public static function cFromArray(MVCish $MVCish,array $data):self {
 		$response = new self($MVCish);
 		$response->fromArray($data);
 
@@ -274,7 +294,7 @@ class Response extends Base implements \ArrayAccess {
 		return $response;
 	}
 
-	public static function cFromForeignObject(\awPHP\MVCish\MVCish $MVCish,object $obj):self {
+	public static function cFromForeignObject(MVCish $MVCish,object $obj):self {
 		$response = new self($MVCish);
 		$response->object($obj);
 
@@ -298,7 +318,7 @@ class Response extends Base implements \ArrayAccess {
 		}
 	}
 
-	public static function factory(\awPHP\MVCish\MVCish $MVCish,mixed $cResponse=null):self {
+	public static function factory(MVCish $MVCish,mixed $cResponse=null):self {
 
 		// oh hai look at you sexy controller sending us a proper object already
 		if (is_a($cResponse,static::class)) return $cResponse;

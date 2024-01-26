@@ -3,23 +3,26 @@ namespace awPHP\MVCish\Exception;
 class ServerWarning extends \awPHP\MVCish\Exception {
 
 	public static function throwWarning(\awPHP\MVCish\MVCish $MVCish,string $message,string $file=null, int $line=null, array $trace=null):void {
+		self::triggerWarning($message,$file,$line,$trace,$MVCish);
+	}
 
+	public static function triggerWarning(string $message,string $file=null, int $line=null, array $trace=null,\awPHP\MVCish\MVCish $MVCish=null):void {
 		if (!isset($trace)) {
 			$trace = debug_backtrace();
-			//error_log("throwWarning fullTrace: ".\awPHP\MVCish\Debug::getTraceString(0,$trace));
+			//error_log("triggerWarning fullTrace: ".\awPHP\MVCish\Debug::getTraceString(0,$trace));
 			array_shift($trace); // pop this call
 			$trace = \awPHP\MVCish\Debug::getFilteredTrace(0,$trace);
-			//error_log("throwWarning filteredTrace: ".\awPHP\MVCish\Debug::getTraceString(0,$trace));
+			//error_log("triggerWarning filteredTrace: ".\awPHP\MVCish\Debug::getTraceString(0,$trace));
 		}
 		if (isset($trace[0]) && isset($trace[0]['file']) && !isset($file)) {
 			$file = $trace[0]['file'];
 			$line = $trace[0]['line'] ?? null;
-			//error_log("throwWarning setting fileLine: $file ".(isset($line) ? $line : ''));
+			//error_log("triggerWarning setting fileLine: $file ".(isset($line) ? $line : ''));
 		}
 		$w = self::create($message,null,null,$file,$line,E_USER_WARNING,$trace);
 		$w->trigger($MVCish);
-		//error_log("throwWarning fileLine now: ".$w->getFile().' '.$w->getLine());
 	}
+
 
 	public function __construct($message=null,$code=null, \Exception $previous = null) {
 		$this->statusText = parent::warning;
@@ -29,13 +32,17 @@ class ServerWarning extends \awPHP\MVCish\Exception {
 		$this->phpErrorCode(E_USER_WARNING);
 	}
 
-	public function trigger(\awPHP\MVCish\MVCish $MVCish) {
-		//error_log("trigger global Exception, fileLine: ".$this->getFile().' '.$this->getLine());
-		// call the error handler directly, so we can pass ourselves to it
-		\awPHP\MVCish\Debug::errorHandler($MVCish,E_USER_WARNING,
-			$this->getMessage(),$this->getFile(),$this->getLine(),$this);
-		// now trigger php properly, tho our handler will ignore it the second time
-		trigger_error('E_MVCISH_WARNING: '.$this->getMessage(), E_USER_WARNING);
+	public function trigger(\awPHP\MVCish\MVCish $MVCish=null) {
+		$prefix = '';
+		if (isset($MVCish)) {
+			//error_log("trigger global Exception, fileLine: ".$this->getFile().' '.$this->getLine());
+			// call the error handler directly, so we can pass ourselves to it
+			\awPHP\MVCish\Debug::errorHandler($MVCish,E_USER_WARNING,
+				$this->getMessage(),$this->getFile(),$this->getLine(),$this);
+			$prefix = $this->getWarningPrefix();
+			// now trigger php properly, tho our handler will ignore it the second time
+		} // otherwise...
+		trigger_error($prefix.$this->getMessage(), E_USER_WARNING);
 	}
 }
 ?>

@@ -4,6 +4,23 @@
 
 require_once 'vendor/autoload.php';
 
+/*
+$a = new \awPHP\MVCish\Primitive\pArray([1,2,3]);
+echo "a=".print_r($a,true)."\n";
+echo "a=".$a."\n";
+echo "a[1]=".$a[1]."\n";
+echo "is_array(a)? ".is_array($a)."\n";
+echo "is_countable(a)? ".is_countable($a)."\n";
+$a[2] = $a[2]+1;
+echo "munge= ".print_r($a->value(),true)."\n";
+$a->value(array_merge($a(),[5,6]));
+echo "merge= ".print_r($a->value(),true)."\n";
+array_push($t = &$a(),7,8);
+echo "push = ".print_r($a->value(),true)."\n";
+//echo "keys = ".print_r(array_keys($a()),true)."\n";
+exit;
+*/
+
 $MVCish = new \awPHP\MVCish\MVCish([
 	'Environment' => isset($_SERVER['MVCISH']) ? $_SERVER['MVCISH'] : 'Local',
 	'appConfig' => ['foo' => 'bar']

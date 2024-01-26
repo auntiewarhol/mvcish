@@ -13,15 +13,16 @@ class Debug extends \awPHP\MVCish\Base {
 		// is to try and unserialize it. Maybe that should use suppression operator tho?
 		if (($errno == E_NOTICE) && (substr($errstr,0,11) == 'unserialize')) return true;
 
-		// we handle directly before triggering the php system.
+		// we handled directly before triggering the php system.
 		if (Exception::isWarningPrefixed($errstr) && !isset($exception)) return true;
 
 		$logged = false; $messages = [];
 
 		try {
 			if (!isset($exception)) {
+				$trace = debug_backtrace(); array_shift($trace);
 				$exception = \awPHP\MVCish\Exception::handlerFactory(
-					$MVCish, $errno, $errstr, $errfile, $errline
+					$MVCish, $errno, $errstr, $errfile, $errline, $trace
 				);
 			}
 		}

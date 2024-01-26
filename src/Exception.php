@@ -63,12 +63,21 @@ class Exception extends \Exception {
 	// pass in and use extra parameters
 	public static function create($message=null,$code=null, \Exception $previous = null,
 		string $file = null, int $line = null, int $errno = null, array $trace = null) {
-		if (!isset($trace)) { $trace = debug_backtrace(); array_shift($trace); }
 
 		$e = new static($message,$code,$previous);
 		$e->phpErrorCode($errno);
-		$e->getOverrideTrace($trace);
-		$e->overrideFileLineTrace($file,$line);
+
+		// if passed a trace, use it to override file and line		
+		if (isset($trace)) {
+			$e->getOverrideTrace($trace);
+			$e->overrideFileLineTrace();
+		}
+		// otherwise get and stash a trace, but use file/line that were passed
+		else {
+			$trace = debug_backtrace(); array_shift($trace);
+			$e->getOverrideTrace($trace);
+			$e->overrideFileLineTrace($file,$line);
+		}
 		return $e;
 	}
 	public function __construct($message=null,$code=null, \Exception $previous = null) {
@@ -113,20 +122,20 @@ class Exception extends \Exception {
 
 
 	// translate php errors and warnings into exception objects
-	public static function handlerFactory($MVCish, $errno, $errstr, $errfile, $errline) {
+	public static function handlerFactory($MVCish, $errno, $errstr, $errfile, $errline, array $trace):self {
 
 		$errstr = self::cleanWarningPrefix($errno,$errstr);
-
 		$e = Debug::isFatalPHPerrCode($errno) ?
-			Exception\ServerError::create($errstr,null,null,$errfile,$errline,$errno):
-			Exception\ServerWarning::create($errstr,null,null,$errfile,$errline,$errno);
+			Exception\ServerError::create($errstr,null,null,$errfile,$errline,$errno,$trace):
+			Exception\ServerWarning::create($errstr,null,null,$errfile,$errline,$errno,$trace);
 
 		$e->phpErrorCode($errno);
+		$e->overrideFileLineTrace();
 		return $e;
 	}
 
 	private const WARNING_PREFIX ='E_MVCISH_WARNING: ';
-	public static function getWarningPrefix() { return $this->warningPrefix; }
+	public static function getWarningPrefix() { return self::WARNING_PREFIX; }
 
 	public static function cleanWarningPrefix(int $errno, string $errstr,bool &$wasCleaned=false):string {
 		if (($errno == E_USER_WARNING) && (substr($errstr,0,18) == self::WARNING_PREFIX)) {
