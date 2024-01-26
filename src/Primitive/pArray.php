@@ -68,6 +68,12 @@ class pArray extends \awPHP\MVCish\Primitive implements \ArrayAccess,\Countable,
 	public function unserialize(string $data): void {
 		$this->value = unserialize($data);
 	}
+	public function __serialize(): array {
+		return $this->value;
+	}
+	public function __unserialize(array $data): void {
+		$this->value = $data;
+	}
 
 	// make callable like: array_function($this())
 	public function &__invoke() { return $this->value; }
