@@ -7,7 +7,7 @@ class pArray extends \awPHP\MVCish\Primitive implements \ArrayAccess,\Countable,
 	protected array $value;
 
 	public function __toString():string {
-		return $this->listify(null);
+		return $this->listify(null) ?? '';
 	}
 	public function toArray():array {
 		return $this->value;
