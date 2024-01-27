@@ -55,7 +55,10 @@ trait Accessors {
 		elseif (is_countable($key)) { //countable = array|pArray
 
 			// of course it's always replace if currently empty
-			if ($replace || !isset($this->$prop)) { $this->$prop = $key; }
+			if ($replace || !isset($this->$prop)) {
+				if (isset($key)) { $this->$prop = $key; }
+				else             { unset($this->$prop); }
+			}
 			else if ($action = $this->chooseMergePush($prop,$this->$prop,$key)) {
 
 				if      ($action == 'merge') { $this->$prop = pArray::array_merge($this->$prop,$key); }
