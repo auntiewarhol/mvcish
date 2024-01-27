@@ -48,17 +48,14 @@ trait Accessors {
 
 		// ->getSetHash($prop,NULL): send key=null to clear the whole array
 		if (!isset($key)) {
-			$this->$prop = null;
+			unset($this->$prop);
 		}
 		// ->getSetHash($prop,[],null,?$replace): send key=array to replace or munge whole array
 		// option bool arg $replace tells us whether to replace or merge|push, default replace.
 		elseif (is_countable($key)) { //countable = array|pArray
 
 			// of course it's always replace if currently empty
-			if ($replace || !isset($this->$prop)) {
-				if (isset($key)) { $this->$prop = $key; }
-				else             { unset($this->$prop); }
-			}
+			if ($replace || !isset($this->$prop)) { $this->$prop = $key; }
 			else if ($action = $this->chooseMergePush($prop,$this->$prop,$key)) {
 
 				if      ($action == 'merge') { $this->$prop = pArray::array_merge($this->$prop,$key); }
