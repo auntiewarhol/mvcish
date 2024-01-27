@@ -81,9 +81,9 @@ trait Accessors {
 					elseif ($action  == 'push') { pArray::array_push($this->$prop[$key],$value); }
 				}
 			}
-			return $this->$prop[$key] ?? null;
+			return isset($this->$prop[$key]) ? $this->$prop[$key] : null;
 		}
-		return $this->$prop ?? null;
+		return isset($this->$prop) ? $this->$prop : null;
 	}
 
 	protected function getSetListArray(string $prop,mixed $value=new Parameter(),bool $replace=true):mixed {

@@ -226,7 +226,7 @@ class Debug extends \awPHP\MVCish\Base {
 	}
 
 
-	private function _chooseExceptionTrace(array $debugBT,array|\Throwable $exTrace=null):array {
+	private static function _chooseExceptionTrace(array $debugBT,array|\Throwable $exTrace=null):array {
 		if (isset($exTrace)) {
 			if (is_array($exTrace)) {
 				$trace = $exTrace;
@@ -242,14 +242,14 @@ class Debug extends \awPHP\MVCish\Base {
 		return $trace;
 	}
 
-	public static function printabledTrace(int $max=0,array|\Throwable $exTrace=null):array {
+	public static function printableTrace(int $max=0,array|\Throwable $exTrace=null):array {
 		$trace = self::_chooseExceptionTrace(debug_backtrace($max),$exTrace);
 		foreach ($trace as $i => $t) {
-			if (isset($t['object'])) $t['object'] = get_class($t['object']);
+			if (isset($t['object'])) $trace[$i]['object'] = get_class($t['object']);
 			if (isset($t['args'])) {
-				foreach ($t['args'] as $i => $arg) {
-					if (is_object($arg))     { $t['args'][$i] = get_class($arg); }
-					else if (is_array($arg)) { $t['args'][$i] = implode(', ',array_keys($arg)); }
+				foreach ($t['args'] as $a => $arg) {
+					if (is_object($arg))     { $trace[$i]['args'][$a] = get_class($arg); }
+					else if (is_array($arg)) { $trace[$i]['args'][$a] = implode(', ',array_keys($arg)); }
 				}
 			}
 		}
