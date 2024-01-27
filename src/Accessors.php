@@ -40,11 +40,11 @@ trait Accessors {
 	protected function getSetHashArray(string $prop,null|string|array|pArray|Parameter $key=new Parameter(),
 		mixed $value=new Parameter(),bool $replace=true):mixed {
 
-		if (!is_array($this->$prop))
-			throw new Exception\ServerError("Cannot use getSetHashArray on ".gettype($this->$prop)." property $prop");
+		if (($propType = $this->getPropertyType($prop)) && ($propType != 'array'))
+			throw new Exception\ServerError("Cannot use getSetHashArray on $propType property $prop");
 
 		// ->getSetHash($prop): no key sent, ignore other args, return the whole array
-		if (isset($key) && $this->isDefaultedParam($key)) return $this->$prop ?? null;
+		if (isset($key) && $this->isDefaultedParam($key)) return isset($this->$prop) ? $this->$prop : null;
 
 		// ->getSetHash($prop,NULL): send key=null to clear the whole array
 		if (!isset($key)) {
@@ -140,6 +140,21 @@ trait Accessors {
 					.static::class.'->'.$propname.'; something may be wrong');
 		}
 		return $action;
+	}
+
+
+	// because "gettype" doesn't work when properties are unset
+	private array $_propertyTypes;
+	public function getPropertyType($prop) {
+		if (!isset($this->_propertyTypes[$prop])) {
+			$this->_propertyTypes[$prop] = $this->_getRefClass()->getProperty($prop)->getType();
+		}
+		return $this->_propertyTypes[$prop];
+	}
+	private \ReflectionClass $_refClass;
+	private function _getRefClass() {
+		if (!isset($this->_refClass)) $this->_refClass = new \ReflectionClass(static::class);
+		return $this->_refClass;
 	}
 
 }
