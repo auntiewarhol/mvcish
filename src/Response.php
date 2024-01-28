@@ -289,7 +289,7 @@ class Response extends Base implements \ArrayAccess,\Countable,\IteratorAggregat
 					"Could not find 'success' key in response data; "
 					."assuming success, but something may be wrong");
 			}
-			$data[$key] = isset($bool) ? $bool : true;
+			$data['success'] = isset($bool) ? $bool : true;
 		}
 		return $response;
 	}
