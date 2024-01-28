@@ -8,10 +8,10 @@ class Environment extends \awPHP\MVCish\Base {
 
 	private string $defaultAppConfigFilename = 'appConfig.php';
 
-	private array $loggerLevel = [
+	protected array $loggerLevel = [
 		'DEFAULT' => 'Warning', 'CLI' => 'Warning'
 	];
-	private array $lineFormatterParams = [
+	protected array $lineFormatterParams = [
 		'stringFormat'       => null,
 		'dateFormat'         => null,
 		'allowInlineBreaks'  => false,
@@ -21,13 +21,13 @@ class Environment extends \awPHP\MVCish\Base {
 
 	// logLevel -- define default & for any error code you want special
 	//	set to false to indicate error should not be logged
-	private string $defaultLogLevel  = 'error';
-	private array  $errCodeLogLevels = [
+	protected string $defaultLogLevel  = 'error';
+	protected array  $errCodeLogLevels = [
 		'401' => 'debug', '301' => 'debug', '199' => 'warning',
 		'NONE' => 'error' // same as default but formalized
 	];
 
-	private bool $prettyPrintHTML = false;
+	protected bool $prettyPrintHTML = false;
 
 
 	//***************************************************************
@@ -156,8 +156,8 @@ class Environment extends \awPHP\MVCish\Base {
 
 	public function getLoggerLevel():string {
 		return $this->loggerLevel[
-			($this->MVCish()->isCLI() && isset($this->loggerLevel['CLI'])) ? 'CLI' :
-			'DEFAULT'] ?? 'Debug';
+			($this->MVCish()->isCLI() && isset($this->loggerLevel['CLI'])) ?
+				'CLI' : 'DEFAULT'] ?? 'Debug';
 	}
 
 	public function getLineFormatter(): \Monolog\Formatter\LineFormatter {

@@ -3,7 +3,7 @@ namespace awPHP\MVCish;
 use \awPHP\MVCish\MVCish;
 use \awPHP\MVCish\E0E0\Parameter;
 
-class Response extends Base implements \ArrayAccess,\Countable,\IteratorAggregate,\Serializable {
+class Response extends Base implements \ArrayAccess,\Countable,\IteratorAggregate,\Serializable ,\JsonSerializable{
 
 	private const RESPONSEKEYS = [
 		'success'        => 'scalar',

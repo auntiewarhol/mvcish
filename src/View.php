@@ -136,6 +136,7 @@ class View extends Base {
 		}
 
 		// now render according to the current view
+		$this->MVCish()->log('MVCish')->debug("Rendering View: ".$this->view());
 		$meth = '_renderView_'.$this->view();
 		$this->$meth();
 		return true;

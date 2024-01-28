@@ -4,10 +4,10 @@ use \awPHP\MVCish\Util\HtmLawed;
 
 class Stage extends \awPHP\MVCish\Environment\Production {
 
-	private array $loggerLevel = [
+	protected array $loggerLevel = [
 		'DEFAULT' => 'Debug', 'CLI' => 'Debug'
 	];
-	private bool $prettyPrintHTML = true;
+	protected bool $prettyPrintHTML = true;
 
 	public function __construct(\awPHP\MVCish\MVCish $MVCish) {
 		parent::__construct($MVCish);
