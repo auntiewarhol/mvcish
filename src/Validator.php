@@ -472,6 +472,10 @@ class Validator extends \awPHP\MVCish\Base {
 		}
 		return $response;
 	}
+	// deprecated alias
+	public function validate_form(array $definition,array $source=null,bool $cache=true):array {
+		return $this->validateForm($definition,$source,$cache);
+	}
 
 	//****************************************************************************
 	public function Response(array $definition,array $source=null,bool $cache=true):Response {
