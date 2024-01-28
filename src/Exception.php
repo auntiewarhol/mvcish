@@ -113,12 +113,14 @@ class Exception extends \Exception {
 		//error_log("createException overide received Trace: ".\awPHP\MVCish\Debug::getTraceString(0,$trace));
 		$fileSet = false;
 		if (isset($trace)) {
+			$trace = Debug::getFilteredTrace(0,$trace);
 			foreach($trace as $t) {
 				if (isset($t['file'])) {
 					//error_log("createException overide file line: ".$t['file'].' '.$t['line']);
 					$this->file = $t['file'];
 					$this->line = $t['line'];
 					$fileSet = true;
+					break;
 				}
 			}
 			$this->getOverrideTrace($trace);

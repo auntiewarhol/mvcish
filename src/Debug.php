@@ -214,8 +214,10 @@ class Debug extends \awPHP\MVCish\Base {
 			}
 			else {
 				//error_log('keeping '.($t['file'].' ' ?? '').($t['class'] ?? '').'->'.$t['function'].' trace is '.count($trace));
-				unset($ignoreUntil);
-				break; //once we find a keeper, keep the rest
+				//if (isset($t['file'])) {
+				//	unset($ignoreUntil);
+				//	break; //once we find a keeper with a file, keep the rest
+				//}
 			}
 		}
 		// just in case we emptied it out
