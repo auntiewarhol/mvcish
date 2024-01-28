@@ -202,8 +202,7 @@ class Debug extends \awPHP\MVCish\Base {
 
 				(((isset($t['class']) && ($t['class'] == 'awPHP\MVCish\MVCish')) || 
 				 (isset($t['file'])  && ($t['file'] == __FILE__))) &&
-				in_array($t['function'],['logExceptionMessage','_error_handler','trigger_error',
-					'awPHP\MVCish\{closure}'])) ||
+				in_array($t['function'],['logExceptionMessage','_error_handler','trigger_error'])) ||
 				
 				((isset($t['class']) && (($t['class'] == 'awPHP\MVCish\Environment') ||
 				  is_subclass_of($t['class'],'awPHP\MVCish\Environment'))) &&

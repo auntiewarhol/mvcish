@@ -69,14 +69,15 @@ class Exception extends \Exception {
 
 		// if passed a trace, use it to override file and line		
 		if (isset($trace)) {
-			$e->getOverrideTrace($trace);
-			$e->overrideFileLineTrace();
+			//error_log("createException usingTrace: ".\awPHP\MVCish\Debug::getTraceString(0,$trace));
+			$e->overrideFileLineTrace(null,null,$trace);
 		}
 		// otherwise get and stash a trace, but use file/line that were passed
 		else {
 			$trace = debug_backtrace(); array_shift($trace);
-			$e->getOverrideTrace($trace);
+			//error_log("createException gotTrace: ".\awPHP\MVCish\Debug::getTraceString(0,$trace));
 			$e->overrideFileLineTrace($file,$line);
+			$e->getOverrideTrace($trace);
 		}
 		return $e;
 	}
@@ -95,27 +96,36 @@ class Exception extends \Exception {
 
 	private array $overrideTrace;
 	private array $filteredTrace;
-	public function getFilteredTrace(bool $reset=false):array {
-		if ($reset || !isset($this->filteredTrace)) {
+	public function getFilteredTrace():array {
+		if (!isset($this->filteredTrace)) {
 			$this->filteredTrace = Debug::getFilteredTrace(0,$this);
 		}
 		return $this->filteredTrace;
 	}
 	public function getOverrideTrace(array $set=null):array {
-		if (isset($set)) $this->overrideTrace = $set;
+		if (isset($set)) {
+			$this->overrideTrace = $set;
+			unset($this->filteredTrace);
+		}
 		return $this->overrideTrace ?? $this->getTrace();
 	}
-	public function overrideFileLineTrace(string $file=null,$line=null):void {
-		if (isset($file)) {
+	public function overrideFileLineTrace(string $file=null,$line=null,$trace=null):void {
+		//error_log("createException overide received Trace: ".\awPHP\MVCish\Debug::getTraceString(0,$trace));
+		$fileSet = false;
+		if (isset($trace)) {
+			foreach($trace as $t) {
+				if (isset($t['file'])) {
+					//error_log("createException overide file line: ".$t['file'].' '.$t['line']);
+					$this->file = $t['file'];
+					$this->line = $t['line'];
+					$fileSet = true;
+				}
+			}
+			$this->getOverrideTrace($trace);
+		}
+		if (isset($file) && !$fileSet) {
 			$this->file = $file;
 			$this->line = isset($line) ? $line : null;
-			$this->getFilteredTrace(true);
-		}
-		elseif ($trace = $this->getFilteredTrace(true)) {
-			if (isset($trace[0]) && isset($trace[0]['file'])) {
-				$this->file = $trace[0]['file'];
-				$this->line = $trace[0]['line'];
-			}
 		}
 		//error_log("filtered trace2=".Debug::getTraceString(0,$this->getFilteredTrace()));
 	}
