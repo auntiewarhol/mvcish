@@ -48,7 +48,7 @@ trait Accessors {
 
 		// ->getSetHash($prop,NULL): send key=null to clear the whole array
 		if (!isset($key)) {
-			unset($this->$prop);
+			$this->$prop = (($pType = $this->getPropertyType($prop)) && ($pType == 'array')) ? [] : null;
 		}
 		// ->getSetHash($prop,[],null,?$replace): send key=array to replace or munge whole array
 		// option bool arg $replace tells us whether to replace or merge|push, default replace.
