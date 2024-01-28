@@ -170,7 +170,7 @@ class Response extends Base implements \ArrayAccess,\Countable,\IteratorAggregat
 
 
 	protected array $respMessages = [];
-	public function messages(null|string|array|Parameter $key=new Parameter(),mixed $value=new Parameter(),bool $replace=true):array {
+	public function messages(null|string|array|Parameter $key=new Parameter(),mixed $value=new Parameter(),bool $replace=true):mixed {
 		return $this->getSetHashArray('respMessages',$key,$value,$replace) ?? [];
 	}
 	// since we know these are simple strings and never arrays of arrays, eliminate
@@ -217,7 +217,7 @@ class Response extends Base implements \ArrayAccess,\Countable,\IteratorAggregat
 	}
 
 	protected array $respRedirectParams = [];
-	public function redirectParams(null|string|array|Parameter $key=new Parameter(),mixed $value=new Parameter(),bool $replace=true):?array {
+	public function redirectParams(null|string|array|Parameter $key=new Parameter(),mixed $value=new Parameter(),bool $replace=true):mixed {
 		return $this->getSetHashArray('respRedirectParams',$key,$value,$replace);
 	}
 
@@ -247,7 +247,7 @@ class Response extends Base implements \ArrayAccess,\Countable,\IteratorAggregat
 	// could just use 'data', but this keeps things out of your form data.
 
 	protected array $respStash = [];
-	public function Stash(null|string|array|Parameter $key=new Parameter(),mixed $value=new Parameter(),bool $replace=true):?array {
+	public function Stash(null|string|array|Parameter $key=new Parameter(),mixed $value=new Parameter(),bool $replace=true):mixed {
 		return $this->getSetHashArray('respStash',$key,$value,$replace) ?? [];
 	}
 
