@@ -218,19 +218,73 @@ $MVCish->runController(function() {
   #do controller stuff
 
   $response = //
-    // Response should typically be an array, with a 'success' key, eg:
-    // 	$response = ['success' => true];
+    /*
+		Response is super flexible. To do it proper, return a Response object:
 
-    // along with any other keys appropriate for the situation. However it
-    // could also be a bool, in which case we'll convert it
-    //	$response = true;
+		$response = $self->Response(); // $self in a controller is $MVCish.
 
-    // otherwise we'll take any evaluates-true response you send.
-    // for example other than the typical array, you might send an object
-    // that can serialize itself for the json view.
-    //	$response = $myJSONobject;
+		You can set things after:
+		$response->success(true);
+		$response->messageSuccess('It worked! Go you!');
+		$response->data('something',$toPass);
 
-    // if the View doesn't know how to handle your $response, that's on you.
+		Or when creating:
+		$response = $self->Response([
+			'success'  => true,
+			'messages' => ['success' => 'This also worked!'],
+			'data'     => ['something' => $toPass,'somethingElse' => $toAlsoPass]
+		]);
+
+		In many cases, you'll just take the one you can get back from the form validator:
+
+		$response = $self->Validator()->Response(
+			// Validator is a whole other thing to document, but here's a taste...
+
+			'title'        => ['required' => true, 'valid'=>['maxlength'=>100]],
+			'instructions' => ['valid'=>['maxlength' =>	$self->Model('Foo')::MAX_FOO_INSTRUCTIONS]],
+			'widgets'      => [
+				'required' => $someCondition ? true : false,
+				'valid'    => function($validator,&$value) use (&$self,&$User) {
+					if (!is_array($value)) $value = [$value];
+					if (count($value) == 1 && in_array($value[0],['none','all'])) return true;
+					if ($self->Model('WidgetQuery')->filterByUser($User)->filterByActive(true)
+						->filterByWidgetId($value)->count() == count($value)
+					) return true;
+					return false;
+				},
+				'missing' => "Please select which widgets will be used."
+			],
+			'writable' => ['defaulter' => 'boolfalse'],
+			'expires' => [
+				'default' => null,
+				'valid'=>['date_format_to_iso' => 'm/d/Y'],
+				'name'=>'Expiration Date'
+			],
+		]);
+
+		(If all that passes the validator, $response->success() is now true, $response->valid() 
+		will give you the validated form fields, etc. Otherwisem success would be false, 
+		$response->missing() and $respons->invalid() will give you arrays of errored fields, etc.)
+
+		---
+		
+		But you can also just send an array, with at minimum a 'success' key, eg:
+		$response = ['success' => true];
+
+		along with any other keys appropriate for the situation. 
+		$response = ['success' => true, 'data' => ['something' => $toPass]];
+
+		Or it could just be a bool, in which case we'll convert it
+		$response = true;
+
+		For that matter, we'll take any evaluates-true response you send.
+		for example other than the typical array, you might send an object
+		that can serialize itself for the json view.
+		$response = $myJSONobject;
+
+		Or even a text string that's the actual body of the response for the client.
+		$response = "Not sure the use case, but there probably is one";
+	*/
 
   return $response;
 });
@@ -249,6 +303,8 @@ examples:
 
 A model_initialize function can be passed in MVCish options to do any
 setup work needed for the model when MVCish starts. See myApp.php above.
+
+ROADMAP: Updates coming to allow access to multiple models
 
 
 #VIEW ************************
@@ -293,6 +349,9 @@ The class may be defined like:
     ]);
 
 
+ROADMAP: Updates coming to make proper objects of each of the View types, so it
+will be easier for clients to override / extend the built-in ones, or create new ones.
+
 
 #AUTHORIZATION ************************
 
@@ -321,6 +380,11 @@ MyApp/lib/Auth.php
 }?>
 ```	
 
+ROADMAP: I don't really think Auth is something the *MVC* framework should be responsible for, 
+but I can see an argument that an *application framework* is bigger than just the MVC, and should 
+handle Auth. Will explore possibility of addding plugin capabilities, and maybe creating a 
+PHPAuth (https://github.com/PHPAuth/PHPAuth"php::auth) Plugin. Or making it part of the coming 
+install script, perhaps.
 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -329,11 +393,19 @@ MyApp/lib/Auth.php
 <!-- ROADMAP -->
 ## Roadmap
 
-There are a few things where I'm returning or receiving data which I know I need to make into a proper class. Response, URI, View, offhand. I really don't recommend anyone else use this until I've done that.
+I have been SUPER busy the last couple of weeks, and at this point I believe I've fixed 90% of 
+what I knew to be hacky and/or unfinished. I've got a little work left to do on Models and Views, 
+as mentioned above, but I *think* that's about it for cleanup and pre-work.
 
-I am about to use this in a second project for the first time, and I'm going to try and use the process to develop an install / build-starter-site script. And improve the docs. 
+I am about to use this in a second project for the first time, and I'm going to try and use the 
+process to develop an install / build-starter-site script. And improve the docs. 
 
-Once I've done those things, I think at that point, I might say go for it, if you're so inclined.
+Once I've done those things, I think at that point, this might be ready for public consumption, 
+if anyone is inclined to play with it.
+
+Future stuff, as I mentioned I think a Plugin architechture might be the next step, to add things 
+that I don't think are MVC-framework responsibilities, but might be Application-framework responsibilities. 
+Auth is the first big one, and then *maybe* HTML builder tools?
 
 
 (boilerplate)
