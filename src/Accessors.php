@@ -32,7 +32,7 @@ trait Accessors {
 
 
 	protected function getSetScalar(string $prop,mixed $value=new Parameter()):mixed {
-		if (!$this->isDefaultedParam($value)) $this->$prop = $value;
+		if (!self::isDefaultedParam($value)) $this->$prop = $value;
 		return $this->$prop ?? null;
 	}
 
@@ -44,7 +44,7 @@ trait Accessors {
 			throw new Exception\ServerError("Cannot use getSetHashArray on $propType property $prop");
 
 		// ->getSetHash($prop): no key sent, ignore other args, return the whole array
-		if (isset($key) && $this->isDefaultedParam($key)) return isset($this->$prop) ? $this->$prop : null;
+		if (isset($key) && self::isDefaultedParam($key)) return isset($this->$prop) ? $this->$prop : null;
 
 		// ->getSetHash($prop,NULL): send key=null to clear the whole array
 		if (!isset($key)) {
@@ -64,7 +64,7 @@ trait Accessors {
 		}
 		else { // ->getSetHash($prop,'foo') $key is string
 
-			if (!$this->isDefaultedParam($value)) { //if we actually got an arg
+			if (!self::isDefaultedParam($value)) { //if we actually got an arg
 
 				// ->getSetHash($prop,'foo',$value), same as:
 				// ->getSetHash($prop,'foo',$value,true): send set=anything to set the key
