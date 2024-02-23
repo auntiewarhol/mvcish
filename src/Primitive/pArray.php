@@ -1,8 +1,11 @@
 <?php
 namespace awPHP\MVCish\Primitive;
-use E0E0\Parameter;
+#use E0E0\Parameter;
 
 class pArray extends \awPHP\MVCish\Primitive implements \ArrayAccess,\Countable,\IteratorAggregate,\Serializable {
+
+	// goofy hack until php 8.1
+	const dParam = 'Cr@ZeeC0nSt@Nt';
 
 	protected array $value;
 
@@ -22,8 +25,10 @@ class pArray extends \awPHP\MVCish\Primitive implements \ArrayAccess,\Countable,
         return array_keys($arr) === range(0, count($arr) - 1);
     }
 
-	public function listify(string|null|Parameter $conjunction=new Parameter(), bool $oxford=true):string {
-		$conjunction = is_a($conjunction,'awPHP\MVCish\E0E0\Parameter') ? ' and ' :
+	//public function listify(string|null|Parameter $conjunction=new Parameter(), bool $oxford=true):string {
+	public function listify(string|null $conjunction=self::dParam, bool $oxford=true):string {
+		//$conjunction = is_a($conjunction,'awPHP\MVCish\E0E0\Parameter') ? ' and ' :
+		$conjunction = ($conjunction === self::dParam) ? ' and ' :
 			(isset($conjunction) ? " $conjunction " : ' ');
 		$a = $this->value() ?? [];
 		$last = array_pop($a);

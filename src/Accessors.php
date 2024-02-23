@@ -1,6 +1,6 @@
 <?php
 namespace awPHP\MVCish;
-use \awPHP\MVCish\E0E0\Parameter;
+#use \awPHP\MVCish\E0E0\Parameter;
 use \awPHP\MVCish\Primitive\pArray;
 
 trait Accessors {
@@ -26,19 +26,27 @@ trait Accessors {
 	// will auto warn/err if you haven't defined $prop
 	// we don't check type on Scalar, so you should.
 
+
+	// goofy hack until php 8.1
+	//const dParam = 'Cr@ZeeC0nSt@Nt';
+	// well $%#^#$%^!, trait cannot have constant
+
 	protected static function isDefaultedParam($arg) {
-		return is_a($arg,'awPHP\MVCish\E0E0\Parameter');
+		//return is_a($arg,'awPHP\MVCish\E0E0\Parameter');
+		return $arg === 'Cr@ZeeC0nSt@Nt';
 	}
 
 
-	protected function getSetScalar(string $prop,mixed $value=new Parameter()):mixed {
+	//protected function getSetScalar(string $prop,mixed $value=new Parameter()):mixed {
+	protected function getSetScalar(string $prop,mixed $value='Cr@ZeeC0nSt@Nt'):mixed {
 		if (!self::isDefaultedParam($value)) $this->$prop = $value;
 		return $this->$prop ?? null;
 	}
 
  	// Hash = Associative Array. Yes, I'm from perl.
-	protected function getSetHashArray(string $prop,null|string|array|pArray|Parameter $key=new Parameter(),
-		mixed $value=new Parameter(),bool $replace=true):mixed {
+	//protected function getSetHashArray(string $prop,null|string|array|pArray|Parameter $key=new Parameter(),
+	protected function getSetHashArray(string $prop,null|string|array|pArray $key='Cr@ZeeC0nSt@Nt',
+		mixed $value='Cr@ZeeC0nSt@Nt',bool $replace=true):mixed {
 
 		if (($propType = $this->getPropertyType($prop)) && ($propType != 'array'))
 			throw new Exception\ServerError("Cannot use getSetHashArray on $propType property $prop");
@@ -86,7 +94,8 @@ trait Accessors {
 		return isset($this->$prop) ? $this->$prop : null;
 	}
 
-	protected function getSetListArray(string $prop,mixed $value=new Parameter(),bool $replace=true):mixed {
+	//protected function getSetListArray(string $prop,mixed $value=new Parameter(),bool $replace=true):mixed {
+	protected function getSetListArray(string $prop,mixed $value='Cr@ZeeC0nSt@Nt',bool $replace=true):mixed {
 		// Array = zero-indexed simple array
 		// ->getSetArray($prop) 		    // returns the whole $prop array
 		// ->getSetArray($prop,'foo')	    // pushes $foo onto $prop

@@ -1,9 +1,12 @@
 <?php
 namespace awPHP\MVCish;
 use \awPHP\MVCish\MVCish;
-use \awPHP\MVCish\E0E0\Parameter;
+#use \awPHP\MVCish\E0E0\Parameter;
 
-class Response extends Base implements \ArrayAccess,\Countable,\IteratorAggregate,\Serializable ,\JsonSerializable{
+class Response extends Base implements \ArrayAccess,\Countable,\IteratorAggregate,\Serializable ,\JsonSerializable {
+
+	// goofy hack until php 8.1
+	const dParam = 'Cr@ZeeC0nSt@Nt';
 
 	private const RESPONSEKEYS = [
 		'success'        => 'scalar',
@@ -125,52 +128,61 @@ class Response extends Base implements \ArrayAccess,\Countable,\IteratorAggregat
 	//****************************************************************************			
 
 	protected bool $respSuccess;
-	public function success(bool|Parameter $value=new Parameter()):bool {
+	//public function success(bool|Parameter $value=new Parameter()):bool {
+	public function success(bool|string $value=self::dParam):bool {
 		// assume success until told otherwise
 		return $this->getSetScalar('respSuccess',$value) ?? true;
 	}
 
 
 	protected array $respHeaders = [];
-	public function headers(string $value=new Parameter(),bool $replace=true):?array {
+	//public function headers(string $value=new Parameter(),bool $replace=true):?array {
+	public function headers(string $value=self::dParam,bool $replace=true):?array {
 		return $this->getSetListArray('respHeaders',$value,$replace);
 	}
 
 	protected string $respBody;
-	public function body(string|Parameter $value=new Parameter()):?string {
+	//public function body(string|Parameter $value=new Parameter()):?string {
+	public function body(string $value=self::dParam):?string {
 		return $this->getSetScalar('respBody',$value);
 	}
 	public function hasBody():bool { return !empty($this->respBody); }
 
 	protected array $respData = [];
-	public function data(null|string|array|Parameter $key=new Parameter(),mixed $value=new Parameter(),bool $replace=true):mixed {
+	//public function data(null|string|array|Parameter $key=new Parameter(),mixed $value=new Parameter(),bool $replace=true):mixed {
+	public function data(null|string|array $key=self::dParam,mixed $value=self::dParam,bool $replace=true):mixed {
 		return $this->getSetHashArray('respData',$key,$value,$replace);
 	}
 
 	protected array $respValid = [];
-	public function valid(null|string|array|Parameter $key=new Parameter(),mixed $value=new Parameter(),bool $replace=true):mixed {
+	//public function valid(null|string|array|Parameter $key=new Parameter(),mixed $value=new Parameter(),bool $replace=true):mixed {
+	public function valid(null|string|array $key=self::dParam,mixed $value=self::dParam,bool $replace=true):mixed {
 		return $this->getSetHashArray('respValid',$key,$value,$replace);
 	}
 
 	protected object $respObject;
-	public function object(object $value=new Parameter()):?object {
+	//public function object(object $value=new Parameter()):?object {
+	public function object(object|string $value=self::dParam):?object {
 		return $this->getSetScalar('respObject',$value);
 	}
 
 
 	protected int $respCode;
-	public function code(int|Parameter $value=new Parameter()):?int {
+	//public function code(int|Parameter $value=new Parameter()):?int {
+	public function code(int|string $value=self::dParam):?int {
 		return $this->getSetScalar('respCode',$value);
 	}
 
 	protected string $respError;
-	public function error(string|Parameter $value=new Parameter()):?string {
+	//public function error(string|Parameter $value=new Parameter()):?string {
+	public function error(string $value=self::dParam):?string {
 		return $this->getSetScalar('respError',$value);
 	}
 
 
 	protected array $respMessages = [];
-	public function messages(null|string|array|Parameter $key=new Parameter(),mixed $value=new Parameter(),bool $replace=true):mixed {
+	//public function messages(null|string|array|Parameter $key=new Parameter(),mixed $value=new Parameter(),bool $replace=true):mixed {
+	public function messages(null|string|array $key=self::dParam,mixed $value=self::dParam,bool $replace=true):mixed {
 		return $this->getSetHashArray('respMessages',$key,$value,$replace) ?? [];
 	}
 	// since we know these are simple strings and never arrays of arrays, eliminate
@@ -190,55 +202,65 @@ class Response extends Base implements \ArrayAccess,\Countable,\IteratorAggregat
 
 
 	protected string $respStatusText;
-	public function statusText(string|Parameter $value=new Parameter()):?string {
+	//public function statusText(string|Parameter $value=new Parameter()):?string {
+	public function statusText(string $value=self::dParam):?string {
 		return $this->getSetScalar('respStatusText',$value);
 	}
 
 	protected array $respMissing = [];
-	public function missing(string|Parameter $value=new Parameter(),bool $replace=true):?array {
+	//public function missing(string|Parameter $value=new Parameter(),bool $replace=true):?array {
+	public function missing(string $value=self::dParam,bool $replace=true):?array {
 		return $this->getSetListArray('respMissing',$value,$replace);
 	}
 
 	protected array $respInvalid = [];
-	public function invalid(string|Parameter $value=new Parameter(),bool $replace=true):?array {
+	//public function invalid(string|Parameter $value=new Parameter(),bool $replace=true):?array {
+	public function invalid(string $value=self::dParam,bool $replace=true):?array {
 		return $this->getSetListArray('respInvalid',$value,$replace);
 	}
 
 
 	protected string $respRedirect;
-	public function redirect(string|URI|Parameter $value=new Parameter()):mixed {
+	//public function redirect(string|URI|Parameter $value=new Parameter()):mixed {
+	public function redirect(string|URI $value=self::dParam):mixed {
 		return $this->getSetScalar('respRedirect',$value);
 	}
 	public function hasRedirect():bool { return !empty($this->redirect); }
 
 	protected string $respNoPostRedirect;
-	public function noPostRedirect(bool|Parameter $value=new Parameter()):?bool {
+	//public function noPostRedirect(bool|Parameter $value=new Parameter()):?bool {
+	public function noPostRedirect(bool|string $value=self::dParam):?bool {
 		return $this->getSetScalar('respNoPostRedirect',$value);
 	}
 
 	protected array $respRedirectParams = [];
-	public function redirectParams(null|string|array|Parameter $key=new Parameter(),mixed $value=new Parameter(),bool $replace=true):mixed {
+	//public function redirectParams(null|string|array|Parameter $key=new Parameter(),mixed $value=new Parameter(),bool $replace=true):mixed {
+	public function redirectParams(null|string|array $key=self::dParam,mixed $value=self::dParam,bool $replace=true):mixed {
 		return $this->getSetHashArray('respRedirectParams',$key,$value,$replace);
 	}
 
 
 	protected string $respFilename;
-	public function filename(string|Parameter $value=new Parameter()):?string {
+	//public function filename(string|Parameter $value=new Parameter()):?string {
+	public function filename(string $value=self::dParam):?string {
 		return $this->getSetScalar('respFilename',$value);
 	}
 
 	protected mixed $respStreamHandle;
-	public function streamHandle(mixed $value=new Parameter()):mixed {
+	//public function streamHandle(mixed $value=new Parameter()):mixed {
+	public function streamHandle(mixed $value=self::dParam):mixed {
 		return $this->getSetScalar('respStreamHandle',$value);
 	}
 
 	protected mixed $respRowCallback;
-	public function rowCallback(mixed $value=new Parameter()):mixed {
+	//public function rowCallback(mixed $value=new Parameter()):mixed {
+	public function rowCallback(mixed $value=self::dParam):mixed {
 		return $this->getSetScalar('respRowCallback',$value);
 	}
 
 	protected array $respRows = [];
-	public function rows(array|Parameter $value=new Parameter(),bool $replace=true):?array {
+	//public function rows(array|Parameter $value=new Parameter(),bool $replace=true):?array {
+	public function rows(array|string $value=self::dParam,bool $replace=true):?array {
 		return $this->getSetListArray('respRows',$value,$replace);
 	}
 
@@ -247,7 +269,8 @@ class Response extends Base implements \ArrayAccess,\Countable,\IteratorAggregat
 	// could just use 'data', but this keeps things out of your form data.
 
 	protected array $respStash = [];
-	public function Stash(null|string|array|Parameter $key=new Parameter(),mixed $value=new Parameter(),bool $replace=true):mixed {
+	//public function Stash(null|string|array|Parameter $key=new Parameter(),mixed $value=new Parameter(),bool $replace=true):mixed {
+	public function Stash(null|string|array $key=self::dParam,mixed $value=self::dParam,bool $replace=true):mixed {
 		return $this->getSetHashArray('respStash',$key,$value,$replace) ?? [];
 	}
 
