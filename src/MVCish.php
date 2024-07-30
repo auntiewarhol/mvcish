@@ -421,11 +421,11 @@ class MVCish {
 	private string $controllerName;
 	public function controllerName($set=null) {
 		if (isset($set)) $this->controllerName = $set;
-		return $this->controllerName;
+		return isset($this->controllerName) ? $this->controllerName : null;
 	}
 	public function pathArgs($set=null) {
 		if (isset($set)) $this->pathArgs = $set;
-		return $this->pathArgs;
+		return isset($this->pathArgs) ? $this->pathArgs : null;
 	}
 
 	private function runController($controller) {
