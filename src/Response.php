@@ -175,7 +175,7 @@ class Response extends Base implements \ArrayAccess,\Countable,\IteratorAggregat
 
 	protected string $respError;
 	//public function error(string|Parameter $value=new Parameter()):?string {
-	public function error(string $value=self::dParam):?string {
+	public function error(string|array $value=self::dParam):?string {
 		return $this->getSetScalar('respError',$value);
 	}
 
