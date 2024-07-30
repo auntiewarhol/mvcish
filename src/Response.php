@@ -173,7 +173,7 @@ class Response extends Base implements \ArrayAccess,\Countable,\IteratorAggregat
 		return $this->getSetScalar('respCode',$value);
 	}
 
-	protected string $respError;
+	protected mixed $respError;
 	//public function error(string|Parameter $value=new Parameter()):?string {
 	public function error(string|array $value=self::dParam):?string {
 		return $this->getSetScalar('respError',$value);
