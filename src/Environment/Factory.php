@@ -56,7 +56,7 @@ class Factory {
 						if ($tryCamel == 'Prod') {
 							try {
 								$classObj = self::getEnvironment($MVCish,'Production');
-								return $clasObj;
+								return $classObj;
 							}
 							catch(\Exception $e) {}
 						}
